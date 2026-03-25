@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/layout/Sidebar'
 
@@ -10,8 +9,10 @@ export default async function AdminLayout({
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  // 未ログイン時はサイドバーなしでそのまま表示（ログインページ用）
+  // ミドルウェアが /admin/* の認証保護を担当するためここではリダイレクトしない
   if (!user) {
-    redirect('/admin/login')
+    return <>{children}</>
   }
 
   return (

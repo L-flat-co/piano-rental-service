@@ -77,11 +77,207 @@
   - `mail.ドメイン名` → Resend（メール送信用）
 - 将来的にDNS管理をCloudflareへ移管することも選択肢として保留
 
+### Vercel デプロイ完了
+- GitHub リポジトリ: `L-flat-co/piano-rental-service`
+- Vercel プロジェクト: `piano-rental-service`（l-flat-co's projects / Hobby）
+- 本番URL: `https://piano-rental-service.vercel.app`
+- 環境変数 4件を Vercel に設定済み
+
 ### 次のアクション（手動作業）
 1. Supabase SQL Editor で schema.sql を実行
 2. Supabase SQL Editor で seed.sql を実行
 3. Supabase Authentication > Users でオーナーユーザーを作成
 4. staff テーブルに owner レコードを INSERT
-5. `npm run dev` で動作確認
+5. `npm run dev` でローカル動作確認 → ログイン画面が表示されればOK
+
+## 2026-03-21 — Phase 1 セットアップ完了 ✅
+
+### 完了した手動作業
+- Supabase SQL Editor で schema.sql を実行（全テーブル・RLS・トリガー）
+- Supabase SQL Editor で seed.sql を実行（マスタ初期データ）
+- Supabase Authentication でオーナーユーザーを作成
+- staff テーブルに owner レコードを INSERT
+- ローカル `npm run dev -p 3001` でダッシュボード表示確認 ✅
+
+### バグ修正
+- `src/app/admin/layout.tsx` のリダイレクトループを修正
+  - **原因**: layout.tsx が /admin/login にも適用されるため、未ログイン時に `redirect('/admin/login')` を呼ぶと自己ループが発生
+  - **修正**: layout.tsx から redirect を削除し、未ログイン時は `<>{children}</>` をそのまま返す。認証保護はミドルウェアに一元化
+
+### Phase 1 基盤構築 完了
+- ローカル開発環境・Supabase DB・Vercel デプロイすべて稼働確認済み
+- 次は Phase 1 機能実装（顧客管理・ピアノ管理・契約管理・帳票発行）へ
+
+## 2026-03-21 — 帳票発行・CSV機能 追加 ✅
+
+### 請求書PDF redesign
+- InvoicePDF.tsx を仕様書サンプルデザインに合わせてリデザイン
+  - 紺色ヘッダー帯（高さ70pt）・ロゴ左配置・書類タイトル右配置
+  - 2カラム（宛先情報 / 発行者情報）・紺色セクションヘッダー
+  - 品目テーブル・合計ボックス（紺色）・備考欄・紺色フッター
+- ロゴ画像対応（public/images/logo.png）
+  - PDF API route でロゴパスを解決し `logoSrc` として InvoicePDF に渡す
+
+### 料金プラン管理画面 追加
+- `/admin/pricing` — rental_plans / rental_options / spot_fee_types の管理画面
+- Server Actions: `pricing-actions.ts`（getAllPlans / updatePlan / getOptions / createOption / updateOption / getSpotFeeTypes / createSpotFeeType / updateSpotFeeType）
+- Client Components: PlanSection / OptionSection / SpotFeeSection（インライン行編集）
+
+### ダッシュボード強化
+- 下書き請求書アラートバナー
+- 直近30日アクティビティタイムライン（契約＋請求書）
+- KPIカードのリンク化
+
+### 手動品目追加（カスタム明細）
+- 請求書詳細画面（下書き状態限定）で品目の追加・削除
+- `addCustomInvoiceItem` / `removeInvoiceItem` Server Actions
+- `recalcInvoiceTotals` で合計を自動再計算
+
+### 契約一覧CSVエクスポート
+- `/api/contracts/export` — 21カラム・BOM付きUTF-8（Excel対応）
+- 契約一覧ページに「CSVエクスポート」ボタン追加
+
+### 顧客CSVインポート
+- `/api/customers/import` — 列名自動マッピング（複数エイリアス対応）
+- CustomerImportForm — ドラッグ＆ドロップ UI・結果サマリー表示
+- `/admin/customers/import` ページ追加
+- 顧客一覧ページに「CSVインポート」ボタン追加
+
+### 一括発行（当月分まとめて生成）
+- `bulkGenerateInvoices` Server Action — アクティブな全契約に対して請求月指定で一括生成
+  - 既存インボイスがある契約はスキップ（重複防止）
+  - 生成件数・スキップ件数・エラー詳細を返す
+- BulkGenerateButton Client Component — モーダルダイアログ形式
+  - 請求月・発行日・支払期限・備考を入力して実行
+  - 生成後は件数サマリーを表示
+- 帳票発行一覧ページに「一括発行」ボタン追加
+
+## 2026-03-21 — Phase 1 残タスク完了 ✅
+
+### 中途解約料自動計算
+- `calculateEarlyTerminationFee` Server Action 追加（`contract-actions.ts`）
+  - 契約期間（yearly/half_year/monthly）に応じて最低契約満了日を算出
+  - 解約日が満了前の場合、残り月数（切り上げ）× 月額合計（税込）を返す
+  - 単月契約は解約料なし
+- `TerminateButton.tsx` 更新: `useTransition` で解約日変更のたびに自動計算・プレビュー表示
+
+### Supabase Storage PDF保存
+- `Invoice` 型に `pdf_url: string | null` を追加
+- PDF route が生成後に `invoice-pdfs` バケットへアップロード（失敗は非致命的）
+- 請求書詳細ページに「保存済みPDF」リンクを追加
+- **Supabase 手動作業**: `ALTER TABLE invoices ADD COLUMN IF NOT EXISTS pdf_url TEXT;` + バケット作成
+
+### メール送信（Resend）
+- `src/actions/email-actions.ts` 新規: `sendInvoiceEmail` Server Action
+  - HTMLメールテンプレート（請求書情報テーブル・PDFリンク・カスタムメッセージ対応）
+  - 送信後、下書き請求書を自動的に「発行済み」に変更
+- `src/components/invoices/SendEmailButton.tsx` 新規: モーダル形式の送信UI
+- 請求書詳細ページのサイドバーに「メール送信」セクション追加
+- **起動条件**: `.env.local` に `RESEND_API_KEY` を設定すること
+
+### Phase 1 全タスク完了
+
+## 2026-03-21 — Phase 2 実装 ✅
+
+### イベント案件管理
+- `src/actions/event-actions.ts` 新規（CRUD + `calculateCancellationFee`）
+  - キャンセルポリシー: 8日前以上=無料 / 7〜3日前=50% / 2日前以内=100%
+- `EventForm.tsx` / `EventStatusButtons.tsx`（キャンセルモーダル・料金プレビュー付き）
+- 一覧ページ（ステータスタブ・検索）、詳細ページ、新規・編集ページ
+
+### 見積書・領収書 PDF
+- `InvoicePDF.tsx` に `documentType: 'invoice' | 'estimate' | 'receipt'` prop 追加
+- PDF API route が `?type=estimate` / `?type=receipt` クエリに対応
+- 請求書詳細ページのPDFボタンをドロップダウン化（3種類選択）
+
+### 入金管理
+- `payment-actions.ts`（recordPayment / deletePayment / getUnpaidInvoices）
+- `RecordPaymentButton.tsx`（モーダル形式）
+- `/admin/payments` ページ（KPI4枚 + 記録一覧 + 未入金一覧）
+- 請求書詳細ページのサイドバーに「入金を記録する」追加
+
+## 2026-03-21 — 契約書PDF生成 ✅
+
+### ContractPDF（テンプレート準拠）
+- `src/components/contracts/ContractPDF.tsx` 新規作成
+  - 実物テンプレート（`【契約書】テンプレート_L-flat.pdf`）に合わせた構成
+  - ヘッダー帯（ロゴ + 「ピアノレンタル契約書 / LEASING PIANO AGREEMENT」）
+  - 契約番号バー（CNT-YYYYMM-XXXX / 契約日 / 見積番号）
+  - 2カラム：借主（顧客情報・署名欄）/ 貸主（会社情報・社印欄）
+  - レンタル商品・設置情報セクション（ピアノ情報・プラン種別・契約形態のチェックボックス表示）
+  - 料金明細（初期費用テーブル + 月額費用テーブル + 合計ボックス）
+  - お支払い情報（振込先・請求日）
+  - 契約条件（7項目固定テキスト）
+- `src/app/api/contracts/[id]/pdf/route.tsx` 新規作成
+  - 契約データ + 初期費用スポット明細を取得してPDF生成
+  - ファイル名: `CNT-{YYYYMM}-{UUID4chars}.pdf`
+- 契約詳細ページのヘッダーに「契約書PDF」ボタンを追加
+
+### Phase 2 全タスク完了
+
+## 2026-03-25 — Phase 3 実装 + SPEC.md 作成
+
+### SPEC.md 作成
+- `~/Desktop/piano-rental-service/SPEC.md` に全14セクションの仕様書を作成
+- 全テーブル・ページ・アクション・コンポーネントを網羅
+
+### 運送費デフォルト修正
+- 片道 ¥48,400 / 往復 ¥96,800 に修正（SPEC.md + constants.ts）
+
+### システム設定画面（/admin/settings）
+- `settings-actions.ts` — getSettings / updateSettings
+- `SettingsForm.tsx` — 会社情報・請求設定・振込先・メールテンプレート
+- `/admin/settings/page.tsx` — 設定ページ
+
+### 会計レポート（/admin/reports）
+- `report-actions.ts` — getReportSummary（年次・月次集計）
+- 月次推移バーチャート（CSS棒グラフ・請求額/入金額）
+- 月次テーブル（請求額・入金額・未回収・回収率）
+- KPI5枚（年間請求額・入金額・未回収残高・契約数・イベント数）
+- 年切替ナビゲーション
+
+### CSVエクスポート（会計ソフト向け）
+- `/api/reports/export?year=YYYY` — 請求一覧+入金一覧を1ファイルに結合
+- BOM付きUTF-8、Excel対応
+- レポートページにCSVボタン追加
+
+### メールテンプレート管理
+- `SystemSettings` 型に `email_subject_template` / `email_body_template` を追加
+- 設定画面で件名テンプレート・デフォルト追加メッセージを編集可能
+- `SendEmailButton` が設定値を初期値として使用
+- **Supabase手動作業**: `ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS email_subject_template TEXT; ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS email_body_template TEXT;`
+
+## 2026-03-25 — Phase 4 Web申込フロー ✅
+
+### applications テーブル
+- `supabase/migrations/add_applications.sql` — 新テーブル + ENUM + RLS
+- RLS: 公開INSERT（認証不要）+ 管理者全操作 + 閲覧者SELECT
+- `Application` 型を `types/index.ts` に追加
+
+### 公開Web申込フォーム（/apply）
+- `/apply` — 認証不要の公開ページ（ロゴ付きヘッダー・フッターレイアウト）
+- `ApplicationForm.tsx` — プラン種別/契約期間（カード選択UI）/ピアノ種別/オプション（チェックボックス）/設置場所入力
+- 月額合計をリアルタイム表示（プラン+オプション）
+- `/apply/complete` — Thank you ページ
+
+### application-actions.ts
+- `submitApplication` — 公開フォームから申込（Admin Client使用）
+- `getApplications` / `getApplication` — 管理画面用一覧/詳細
+- `updateApplicationStatus` — submitted → reviewing → approved / rejected
+- `convertToContract` — 承認→契約変換（顧客自動作成/既存検索 + 契約作成 + ピアノ割当 + 運送費 + ステータス更新）
+- `getNewApplicationCount` — ダッシュボード通知用
+
+### 管理画面
+- `/admin/applications` — 申込一覧（ステータスタブ・検索）
+- `/admin/applications/[id]` — 申込詳細（申込者情報・レンタル希望・設置場所・ステータス変更・契約変換ボタン）
+- `ApplicationStatusButtons.tsx` — ステータス変更ボタン群
+- `ConvertToContractButton.tsx` — 契約変換モーダル（ピアノ割当・開始日・請求日・運送費入力）
+
+### サイドバー + ダッシュボード
+- サイドバーに「Web申込」ナビ追加（clipboard-list アイコン）
+- ダッシュボードに新規申込アラート（submitted件数）
+
+### Supabase手動作業
+`supabase/migrations/add_applications.sql` を Supabase SQL Editor で実行すること
 
 <!-- 以降、機能追加・仕様変更のたびに追記 -->

@@ -16,6 +16,7 @@ export type DocumentType = 'estimate' | 'contract' | 'invoice' | 'receipt'
 export type SpotFeeSection = 'initial' | 'monthly'
 export type SpotFeeType = 'master' | 'custom'
 export type CustomerStatus = 'active' | 'suspended' | 'terminated'
+export type ApplicationStatus = 'submitted' | 'reviewing' | 'approved' | 'rejected' | 'converted'
 
 // ============================================================
 // スタッフ
@@ -209,6 +210,7 @@ export interface Invoice {
   total_amount: number          // 合計（税込）
   status: InvoiceStatus
   notes: string | null
+  pdf_url: string | null        // Supabase Storage の公開 URL
   created_at: string
   updated_at: string
 
@@ -288,8 +290,43 @@ export interface SystemSettings {
   tax_rate: number              // 消費税率（例: 0.10）
   invoice_due_days: number      // 支払い期限（日数）
   logo_url: string | null
+  email_subject_template: string | null  // メール件名テンプレート
+  email_body_template: string | null     // メール本文テンプレート（追加メッセージ部分）
   created_at: string
   updated_at: string
+}
+
+// ============================================================
+// Web申込
+// ============================================================
+
+export interface Application {
+  id: string
+  applicant_name: string
+  applicant_kana: string | null
+  applicant_email: string
+  applicant_phone: string | null
+  applicant_postal_code: string | null
+  applicant_address: string | null
+  company_name: string | null
+  plan_type: 'home' | 'school'
+  contract_period: ContractPeriod
+  piano_type: PianoType
+  preferred_start_date: string | null
+  option_ids: string[]
+  installation_address: string | null
+  installation_floor: string | null
+  installation_elevator: boolean
+  status: ApplicationStatus
+  admin_memo: string | null
+  customer_id: string | null
+  contract_id: string | null
+  created_at: string
+  updated_at: string
+
+  // JOIN
+  customer?: Customer
+  contract?: Contract
 }
 
 // ============================================================

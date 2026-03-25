@@ -136,12 +136,14 @@ export const DEFAULT_TAX_RATE = 0.1
 
 export const ADMIN_NAV_ITEMS = [
   { href: '/admin/dashboard', label: 'ダッシュボード', icon: 'dashboard' },
+  { href: '/admin/applications', label: 'Web申込', icon: 'applications' },
   { href: '/admin/customers', label: '顧客管理', icon: 'customers' },
   { href: '/admin/pianos', label: 'ピアノ管理', icon: 'pianos' },
   { href: '/admin/contracts', label: 'ご家庭/教室用 契約', icon: 'contracts' },
   { href: '/admin/events', label: 'イベント案件', icon: 'events' },
   { href: '/admin/invoices', label: '帳票発行', icon: 'invoices' },
   { href: '/admin/payments', label: '入金管理', icon: 'payments' },
+  { href: '/admin/pricing', label: '料金設定', icon: 'pricing' },
   { href: '/admin/reports', label: '会計レポート', icon: 'reports' },
   { href: '/admin/settings', label: 'システム設定', icon: 'settings' },
 ] as const
@@ -161,6 +163,6 @@ export const EVENT_CANCEL_POLICY = {
 // ============================================================
 
 export const TRANSPORT_FEE_DEFAULTS = {
-  ROUND_TRIP: 48400,  // 往復基本（税込）
-  ONE_WAY: 19250,     // 片道（税込）
+  ONE_WAY: 48400,     // 片道（税込）
+  ROUND_TRIP: 96800,  // 往復（税込）＝片道×2が目安
 } as const
