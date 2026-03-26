@@ -11,6 +11,8 @@ import {
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { TerminateButton } from '@/components/contracts/TerminateButton'
 import type { PickupFeeStatus } from '@/components/contracts/TerminateButton'
+import { EditInitialFees } from '@/components/contracts/EditInitialFees'
+import { getSpotFeeTypes } from '@/actions/pricing-actions'
 import { ContractSpotFee } from '@/types'
 
 export default async function ContractDetailPage({
@@ -19,7 +21,10 @@ export default async function ContractDetailPage({
   params: { id: string }
 }) {
   const supabase = await createClient()
-  const contract = await getContract(params.id)
+  const [contract, spotFeeTypes] = await Promise.all([
+    getContract(params.id),
+    getSpotFeeTypes(),
+  ])
 
   if (!contract) {
     notFound()
@@ -199,42 +204,13 @@ export default async function ContractDetailPage({
             </div>
           )}
 
-          {/* 初期費用 */}
-          {initialFees.length > 0 && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-base font-semibold text-gray-900 mb-4">初期費用</h2>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left pb-2 font-medium text-gray-600 text-xs">品目</th>
-                    <th className="text-right pb-2 font-medium text-gray-600 text-xs w-24">単価（税抜）</th>
-                    <th className="text-center pb-2 font-medium text-gray-600 text-xs w-12">数量</th>
-                    <th className="text-right pb-2 font-medium text-gray-600 text-xs w-24">金額（税込）</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {initialFees.map((f) => (
-                    <tr key={f.id} className="border-b border-gray-100">
-                      <td className="py-2 text-gray-900">{f.label}</td>
-                      <td className="py-2 text-right text-gray-600">{formatCurrency(f.amount)}</td>
-                      <td className="py-2 text-center text-gray-600">{f.quantity}</td>
-                      <td className="py-2 text-right font-medium text-gray-900">
-                        {formatCurrency(Math.round(f.amount * f.quantity * 1.1))}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t border-gray-200">
-                    <td colSpan={3} className="pt-2 text-right text-sm font-medium text-gray-600">合計（税込）</td>
-                    <td className="pt-2 text-right font-bold text-gray-900">
-                      {formatCurrency(initialFees.reduce((s, f) => s + Math.round(f.amount * f.quantity * 1.1), 0))}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          )}
+          {/* 初期費用（編集可能） */}
+          <EditInitialFees
+            contractId={contract.id}
+            contractType="home_school"
+            fees={initialFees}
+            spotFeeTypes={spotFeeTypes.filter((s) => s.is_active)}
+          />
 
           {/* 月額スポット費用 */}
           {monthlySpotFees.length > 0 && (

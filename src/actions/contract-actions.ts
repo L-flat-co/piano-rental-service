@@ -316,6 +316,93 @@ export async function calculateEarlyTerminationFee(
   }
 }
 
+// ============================================================
+// スポット費用 CRUD（初期費用の編集用）
+// ============================================================
+
+export async function addContractSpotFee(
+  contractId: string,
+  contractType: 'home_school' | 'event',
+  fee: InitialFeeInput
+): Promise<ActionResult<void>> {
+  const supabase = await createClient()
+
+  const { error } = await supabase.from('contract_spot_fees').insert({
+    contract_id: contractId,
+    contract_type: contractType,
+    fee_type_id: fee.fee_type_id || null,
+    fee_type: fee.fee_type_id ? 'master' : 'custom',
+    section: 'initial',
+    label: fee.label,
+    amount: fee.amount,
+    quantity: fee.quantity,
+    is_recurring: false,
+    memo: fee.memo || null,
+  })
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/admin/contracts')
+  revalidatePath(`/admin/contracts/${contractId}`)
+  revalidatePath('/admin/events')
+  return { success: true, data: undefined }
+}
+
+export async function updateContractSpotFee(
+  feeId: string,
+  updates: { label?: string; amount?: number; quantity?: number }
+): Promise<ActionResult<void>> {
+  const supabase = await createClient()
+
+  const { data: fee } = await supabase
+    .from('contract_spot_fees')
+    .select('contract_id')
+    .eq('id', feeId)
+    .single()
+
+  const { error } = await supabase
+    .from('contract_spot_fees')
+    .update(updates)
+    .eq('id', feeId)
+
+  if (error) return { success: false, error: error.message }
+
+  if (fee) {
+    revalidatePath(`/admin/contracts/${fee.contract_id}`)
+    revalidatePath(`/admin/events/${fee.contract_id}`)
+  }
+  revalidatePath('/admin/contracts')
+  revalidatePath('/admin/events')
+  return { success: true, data: undefined }
+}
+
+export async function deleteContractSpotFee(
+  feeId: string
+): Promise<ActionResult<void>> {
+  const supabase = await createClient()
+
+  const { data: fee } = await supabase
+    .from('contract_spot_fees')
+    .select('contract_id')
+    .eq('id', feeId)
+    .single()
+
+  const { error } = await supabase
+    .from('contract_spot_fees')
+    .delete()
+    .eq('id', feeId)
+
+  if (error) return { success: false, error: error.message }
+
+  if (fee) {
+    revalidatePath(`/admin/contracts/${fee.contract_id}`)
+    revalidatePath(`/admin/events/${fee.contract_id}`)
+  }
+  revalidatePath('/admin/contracts')
+  revalidatePath('/admin/events')
+  return { success: true, data: undefined }
+}
+
 export async function terminateContract(
   id: string,
   endDate: string,
