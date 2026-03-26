@@ -303,7 +303,6 @@ function contractNumber(contract: Contract): string {
 const CONTRACT_CONDITIONS = [
   '本契約は上記レンタル開始日より発効し、解約通知（30日前）をもって終了します。',
   '1年契約・半年契約の中途解約は、残余期間分または単月換算額の少ない方を申し受けます。',
-  '搬出料金はレンタル終了時に別途精算いただきます（目安：¥48,400〜）。',
   '調律は都度ご依頼ください（料金：¥16,500/回）。費用は別途ご請求いたします。',
   '楽器の転貸・譲渡・担保提供は禁止します。',
   '天災・事故等による損傷は、あんしん楽器プランご加入の場合は補償対象となります。',
@@ -433,9 +432,8 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc }: Contra
                 <Text style={styles.partyValue}>{customer?.email || '—'}</Text>
               </View>
               <View style={styles.signatureRow}>
-                <Text style={styles.signatureLabel}>借主署名：</Text>
-                <View style={styles.signatureBox} />
                 <Text style={styles.signatureLabel}>印</Text>
+                <View style={styles.signatureBox} />
               </View>
             </View>
 
@@ -459,9 +457,8 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc }: Contra
                 <Text style={styles.partyValue}></Text>
               </View>
               <View style={styles.signatureRow}>
-                <Text style={styles.signatureLabel}>貸主署名：</Text>
-                <View style={styles.signatureBox} />
                 <Text style={styles.signatureLabel}>社印</Text>
+                <View style={styles.signatureBox} />
               </View>
             </View>
           </View>
@@ -504,7 +501,7 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc }: Contra
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>レンタル開始日</Text>
-              <Text style={styles.infoValue}>{startDate}（納品日）</Text>
+              <Text style={styles.infoValue}>{startDate}</Text>
             </View>
             <View style={styles.infoRowLast}>
               <Text style={styles.infoLabel}>契約終了日</Text>
@@ -609,7 +606,8 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc }: Contra
             </View>
           </View>
 
-          {/* お支払い情報 */}
+          {/* お支払い情報（ページまたぎ防止） */}
+          <View wrap={false}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionHeaderText}>お支払い情報</Text>
           </View>
@@ -641,11 +639,12 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc }: Contra
           <View style={{ marginTop: 4 }}>
             {CONTRACT_CONDITIONS.map((cond, i) => (
               <View key={i} style={styles.conditionItem}>
-                <Text style={styles.conditionNum}>{'①②③④⑤⑥⑦'[i]}</Text>
+                <Text style={styles.conditionNum}>{'①②③④⑤⑥'[i]}</Text>
                 <Text style={styles.conditionText}>{cond}</Text>
               </View>
             ))}
           </View>
+          </View>{/* wrap={false} 閉じ */}
 
         </View>
 
