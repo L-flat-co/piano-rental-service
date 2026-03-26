@@ -145,6 +145,7 @@ export const ADMIN_NAV_ITEMS = [
   { href: '/admin/payments', label: '入金管理', icon: 'payments' },
   { href: '/admin/pricing', label: '料金設定', icon: 'pricing' },
   { href: '/admin/reports', label: '会計レポート', icon: 'reports' },
+  { href: '/admin/staff', label: 'スタッフ管理', icon: 'staff' },
   { href: '/admin/settings', label: 'システム設定', icon: 'settings' },
 ] as const
 
