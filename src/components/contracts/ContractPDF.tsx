@@ -125,19 +125,22 @@ const styles = StyleSheet.create({
   partyRow2: { flexDirection: 'row', marginBottom: 3, gap: 4 },
   partyLabel: { fontSize: 7.5, color: GRAY_TEXT, width: 42 },
   partyValue: { fontSize: 8.5, color: TEXT_DARK, flex: 1, lineHeight: 1.5 },
-  signatureRow: {
+  stampRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginTop: 8,
-    gap: 8,
-    alignItems: 'center',
+    marginTop: 6,
   },
-  signatureLabel: { fontSize: 7.5, color: GRAY_TEXT },
-  signatureBox: {
-    width: 48,
-    height: 22,
+  stampBox: {
+    width: 54,
+    height: 54,
     border: `0.5px solid ${GRAY_BORDER}`,
     borderRadius: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stampText: {
+    fontSize: 10,
+    color: '#d0d0d0',
   },
 
   // 商品・設置情報
@@ -429,11 +432,14 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc }: Contra
               </View>
               <View style={styles.partyRow2}>
                 <Text style={styles.partyLabel}>メール</Text>
-                <Text style={styles.partyValue}>{customer?.email || '—'}</Text>
+                <Text style={[styles.partyValue, { fontSize: (customer?.email?.length || 0) > 24 ? 7 : 8.5 }]}>
+                  {customer?.email || '—'}
+                </Text>
               </View>
-              <View style={styles.signatureRow}>
-                <Text style={styles.signatureLabel}>印</Text>
-                <View style={styles.signatureBox} />
+              <View style={styles.stampRow}>
+                <View style={styles.stampBox}>
+                  <Text style={styles.stampText}>印</Text>
+                </View>
               </View>
             </View>
 
@@ -456,9 +462,10 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc }: Contra
                 <Text style={styles.partyLabel}>担当者</Text>
                 <Text style={styles.partyValue}></Text>
               </View>
-              <View style={styles.signatureRow}>
-                <Text style={styles.signatureLabel}>社印</Text>
-                <View style={styles.signatureBox} />
+              <View style={styles.stampRow}>
+                <View style={styles.stampBox}>
+                  <Text style={styles.stampText}>印</Text>
+                </View>
               </View>
             </View>
           </View>
