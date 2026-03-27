@@ -120,3 +120,33 @@ export async function updatePiano(
   revalidatePath(`/admin/pianos/${id}`)
   return { success: true, data }
 }
+
+export async function deletePiano(id: string): Promise<ActionResult<void>> {
+  const supabase = await createClient()
+
+  // 貸出中は削除不可
+  const { data: piano } = await supabase
+    .from('pianos')
+    .select('status')
+    .eq('id', id)
+    .single()
+
+  if (piano?.status === 'rented') {
+    return { success: false, error: '貸出中のピアノは削除できません。先に契約を解約してください。' }
+  }
+
+  // 契約に紐づいていないか確認
+  const { count } = await supabase
+    .from('contracts')
+    .select('id', { count: 'exact', head: true })
+    .eq('piano_id', id)
+  if (count && count > 0) {
+    return { success: false, error: 'このピアノに紐づく契約があるため削除できません。' }
+  }
+
+  const { error } = await supabase.from('pianos').delete().eq('id', id)
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/admin/pianos')
+  return { success: true, data: undefined }
+}

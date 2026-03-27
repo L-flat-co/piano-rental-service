@@ -117,3 +117,38 @@ export async function updateCustomer(
   revalidatePath(`/admin/customers/${id}`)
   return { success: true, data }
 }
+
+export async function deleteCustomer(id: string): Promise<ActionResult<void>> {
+  const supabase = await createClient()
+
+  // 契約・請求書・イベント案件が紐づいていないか確認
+  const { count: contractCount } = await supabase
+    .from('contracts')
+    .select('id', { count: 'exact', head: true })
+    .eq('customer_id', id)
+  if (contractCount && contractCount > 0) {
+    return { success: false, error: 'この顧客に紐づく契約があるため削除できません。先に契約を削除してください。' }
+  }
+
+  const { count: eventCount } = await supabase
+    .from('event_contracts')
+    .select('id', { count: 'exact', head: true })
+    .eq('customer_id', id)
+  if (eventCount && eventCount > 0) {
+    return { success: false, error: 'この顧客に紐づくイベント案件があるため削除できません。' }
+  }
+
+  const { count: invoiceCount } = await supabase
+    .from('invoices')
+    .select('id', { count: 'exact', head: true })
+    .eq('customer_id', id)
+  if (invoiceCount && invoiceCount > 0) {
+    return { success: false, error: 'この顧客に紐づく請求書があるため削除できません。' }
+  }
+
+  const { error } = await supabase.from('customers').delete().eq('id', id)
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/admin/customers')
+  return { success: true, data: undefined }
+}

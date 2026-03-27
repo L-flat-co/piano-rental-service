@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getPiano } from '@/actions/piano-actions'
+import { getPiano, deletePiano } from '@/actions/piano-actions'
 import { PIANO_TYPE_LABELS, PIANO_STATUS_LABELS, PIANO_STATUS_COLORS } from '@/lib/constants'
 import { formatDate } from '@/lib/utils'
+import { DeleteButton } from '@/components/shared/DeleteButton'
 
 export default async function PianoDetailPage({
   params,
@@ -110,6 +111,19 @@ export default async function PianoDetailPage({
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-4">貸出履歴</h2>
           <p className="text-sm text-gray-400 text-center py-6">貸出データはありません</p>
+        </div>
+
+        {/* 削除 */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <DeleteButton
+            onDelete={async () => {
+              'use server'
+              return deletePiano(piano.id)
+            }}
+            redirectTo="/admin/pianos"
+            confirmMessage={`${piano.maker} ${piano.model} を削除しますか？この操作は取り消せません。`}
+            label="このピアノを削除"
+          />
         </div>
       </div>
     </div>

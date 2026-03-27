@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getCustomer } from '@/actions/customer-actions'
+import { getCustomer, deleteCustomer } from '@/actions/customer-actions'
 import { CUSTOMER_STATUS_LABELS } from '@/lib/constants'
 import { formatDate } from '@/lib/utils'
 import { CustomerStatus } from '@/types'
+import { DeleteButton } from '@/components/shared/DeleteButton'
 
 const STATUS_COLORS: Record<CustomerStatus, string> = {
   active: 'bg-green-100 text-green-800',
@@ -116,6 +117,19 @@ export default async function CustomerDetailPage({
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-base font-semibold text-gray-900 mb-4">帳票履歴</h2>
           <p className="text-sm text-gray-400 text-center py-6">帳票データはありません</p>
+        </div>
+
+        {/* 削除 */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <DeleteButton
+            onDelete={async () => {
+              'use server'
+              return deleteCustomer(customer.id)
+            }}
+            redirectTo="/admin/customers"
+            confirmMessage={`${customer.name} を削除しますか？この操作は取り消せません。`}
+            label="この顧客を削除"
+          />
         </div>
       </div>
     </div>
