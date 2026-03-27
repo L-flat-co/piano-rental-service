@@ -13,22 +13,13 @@ function getTodayStr(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 }
 
-function calcDueDate(issueDate: string, dueDays: number): string {
-  const d = new Date(issueDate)
-  d.setDate(d.getDate() + dueDays)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
 interface BulkGenerateButtonProps {
   invoiceDueDays?: number
 }
 
-export function BulkGenerateButton({ invoiceDueDays = 30 }: BulkGenerateButtonProps) {
-  const todayStr = getTodayStr()
+export function BulkGenerateButton({ invoiceDueDays = 14 }: BulkGenerateButtonProps) {
   const [open, setOpen] = useState(false)
   const [billingMonth, setBillingMonth] = useState(getCurrentMonth)
-  const [issueDate, setIssueDate] = useState(todayStr)
-  const [dueDate, setDueDate] = useState(calcDueDate(todayStr, invoiceDueDays))
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<{
@@ -58,8 +49,6 @@ export function BulkGenerateButton({ invoiceDueDays = 30 }: BulkGenerateButtonPr
 
     const res = await bulkGenerateInvoices({
       billing_month: billingMonth,
-      issue_date: issueDate,
-      due_date: dueDate || undefined,
       notes: notes || undefined,
     })
 
@@ -158,32 +147,9 @@ export function BulkGenerateButton({ invoiceDueDays = 30 }: BulkGenerateButtonPr
                     />
                   </div>
 
-                  {/* 発行日 */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      発行日 <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={issueDate}
-                      onChange={(e) => { setIssueDate(e.target.value); if (e.target.value) setDueDate(calcDueDate(e.target.value, invoiceDueDays)) }}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  {/* 支払期限 */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      支払期限
-                    </label>
-                    <input
-                      type="date"
-                      value={dueDate}
-                      onChange={(e) => setDueDate(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
+                  <p className="text-xs text-gray-500 bg-gray-50 rounded p-2">
+                    発行日・支払期限は各契約の請求日とシステム設定（{invoiceDueDays}日前）から自動計算されます
+                  </p>
 
                   {/* 備考 */}
                   <div>

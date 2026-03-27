@@ -11,13 +11,23 @@ interface GenerateInvoiceFormProps {
   invoiceDueDays?: number
 }
 
-function calcDueDate(issueDate: string, dueDays: number): string {
-  const d = new Date(issueDate)
-  d.setDate(d.getDate() + dueDays)
-  return d.toISOString().split('T')[0]
+/** 対象月 + billing_day から支払期限（billing_day の前日）を算出 */
+function calcDueDateFromBilling(billingMonth: string, billingDay: number): string {
+  const [y, m] = billingMonth.split('-').map(Number)
+  // billing_day の前日 = 支払期限
+  const due = new Date(y, m - 1, billingDay - 1)
+  // billing_day が 1 の場合は前月末日になる
+  return `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, '0')}-${String(due.getDate()).padStart(2, '0')}`
 }
 
-export function GenerateInvoiceForm({ contracts, invoiceDueDays = 30 }: GenerateInvoiceFormProps) {
+/** 支払期限から発行日を逆算 */
+function calcIssueDateFromDue(dueDate: string, dueDays: number): string {
+  const d = new Date(dueDate)
+  d.setDate(d.getDate() - dueDays)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+export function GenerateInvoiceForm({ contracts, invoiceDueDays = 14 }: GenerateInvoiceFormProps) {
   const router = useRouter()
 
   const today = new Date()
@@ -28,7 +38,7 @@ export function GenerateInvoiceForm({ contracts, invoiceDueDays = 30 }: Generate
     contract_id: '',
     billing_month: defaultBillingMonth,
     issue_date: todayStr,
-    due_date: calcDueDate(todayStr, invoiceDueDays),
+    due_date: '',
     notes: '',
   })
   const [error, setError] = useState<string | null>(null)
@@ -39,15 +49,28 @@ export function GenerateInvoiceForm({ contracts, invoiceDueDays = 30 }: Generate
     (selectedContract?.plan?.monthly_fee || 0) +
     (selectedContract?.options?.reduce((sum, o) => sum + o.monthly_fee, 0) || 0)
 
+  /** 契約選択 or 対象月変更 → 支払期限・発行日を自動計算 */
+  function recalcDates(contractId: string, billingMonth: string) {
+    const contract = contracts.find((c) => c.id === contractId)
+    if (contract && billingMonth) {
+      const dueDate = calcDueDateFromBilling(billingMonth, contract.billing_day)
+      const issueDate = calcIssueDateFromDue(dueDate, invoiceDueDays)
+      return { due_date: dueDate, issue_date: issueDate }
+    }
+    return {}
+  }
+
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {
     const { name, value } = e.target
     setFormData((prev) => {
       const next = { ...prev, [name]: value }
-      // 発行日変更時に支払期限を自動再計算
-      if (name === 'issue_date' && value) {
-        next.due_date = calcDueDate(value, invoiceDueDays)
+      // 契約選択 or 対象月変更 → 日付を自動再計算
+      if (name === 'contract_id' || name === 'billing_month') {
+        const cid = name === 'contract_id' ? value : prev.contract_id
+        const bm = name === 'billing_month' ? value : prev.billing_month
+        Object.assign(next, recalcDates(cid, bm))
       }
       return next
     })

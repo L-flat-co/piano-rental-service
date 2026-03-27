@@ -350,9 +350,23 @@ async function recalcInvoiceTotals(
 
 export interface BulkGenerateInput {
   billing_month: string   // "2025-01"
-  issue_date: string
-  due_date?: string
+  issue_date?: string     // 省略時は自動計算
+  due_date?: string       // 省略時は自動計算
   notes?: string
+}
+
+/** billing_dayの前日 = 支払期限 */
+function calcDueDateFromBilling(billingMonth: string, billingDay: number): string {
+  const [y, m] = billingMonth.split('-').map(Number)
+  const due = new Date(y, m - 1, billingDay - 1)
+  return `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, '0')}-${String(due.getDate()).padStart(2, '0')}`
+}
+
+/** 支払期限からX日前 = 発行日 */
+function calcIssueDateFromDue(dueDate: string, dueDays: number): string {
+  const d = new Date(dueDate)
+  d.setDate(d.getDate() - dueDays)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 export interface BulkGenerateResult {
@@ -485,6 +499,13 @@ export async function bulkGenerateInvoices(
     const taxAmount = Math.round(subtotal * 0.1)
     const totalAmount = subtotal + taxAmount
 
+    // 日付を契約の billing_day から自動計算（システム設定の invoice_due_days を使用）
+    const { data: sysSettings } = await supabase.from('system_settings').select('invoice_due_days').single()
+    const dueDays = sysSettings?.invoice_due_days ?? 14
+
+    const contractDueDate = input.due_date || calcDueDateFromBilling(input.billing_month, contract.billing_day)
+    const contractIssueDate = input.issue_date || calcIssueDateFromDue(contractDueDate, dueDays)
+
     // 請求書 INSERT
     const { data: invoice, error: invoiceError } = await supabase
       .from('invoices')
@@ -493,8 +514,8 @@ export async function bulkGenerateInvoices(
         contract_id: contract.id,
         customer_id: contract.customer_id,
         billing_month: input.billing_month,
-        issue_date: input.issue_date,
-        due_date: input.due_date || null,
+        issue_date: contractIssueDate,
+        due_date: contractDueDate,
         subtotal,
         tax_amount: taxAmount,
         total_amount: totalAmount,
