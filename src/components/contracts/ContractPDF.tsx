@@ -667,14 +667,10 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc, contract
               <Text style={styles.payLabel}>振込先</Text>
               <Text style={styles.payValue}>{bankInfo || '　'}</Text>
             </View>
-            <View style={styles.payRow}>
-              <Text style={styles.payLabel}>請求日</Text>
-              <Text style={styles.payValue}>毎月 {contract.billing_day} 日</Text>
-            </View>
             <View style={styles.payRowLast}>
               <Text style={styles.payLabel}>支払期限</Text>
               <Text style={styles.payValue}>
-                {`毎月 ${contract.billing_day} 日（請求書発行から14日以内）`}
+                {`毎月 ${Math.min(contract.billing_day, 28) - 1} 日（ご請求書はお支払期限の${settings?.invoice_due_days ?? 14}日ほど前に発行されます）`}
               </Text>
             </View>
           </View>
