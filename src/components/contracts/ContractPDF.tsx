@@ -576,9 +576,9 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc, contract
                   <Text style={styles.feeSubtotalValue}>{fmt(initialFeesTotal)}</Text>
                 </View>
               </View>
-              {/* 搬出参考金額（欄外・薄文字） */}
+              {/* 搬出参考金額（欄外・薄文字・右寄せ） */}
               {initialFees.filter((f) => f.memo === 'pickup_pending').map((fee) => (
-                <Text key={fee.id} style={{ fontSize: 7, color: '#aaaaaa', marginTop: 2, marginLeft: 2 }}>
+                <Text key={fee.id} style={{ fontSize: 7, color: '#aaaaaa', marginTop: 1, textAlign: 'right', paddingRight: 6 }}>
                   ＊参考搬出費用 {fmt(Math.round(fee.amount * 1.1))}（税込）
                 </Text>
               ))}
