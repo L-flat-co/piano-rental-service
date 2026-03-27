@@ -317,9 +317,10 @@ interface ContractPDFProps {
   initialFees: ContractSpotFee[]
   settings: SystemSettings | null
   logoSrc?: string | null
+  contractDate?: string | null  // 契約日（指定がなければ created_at）
 }
 
-export function ContractPDF({ contract, initialFees, settings, logoSrc }: ContractPDFProps) {
+export function ContractPDF({ contract, initialFees, settings, logoSrc, contractDate }: ContractPDFProps) {
   const companyName    = settings?.company_name || 'L-FLAT MUSIC'
   const postalCode     = settings?.postal_code ? `〒${settings.postal_code}` : ''
   const address        = settings?.address || ''
@@ -374,8 +375,9 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc }: Contra
   const startDate = contract.start_date
     ? new Date(contract.start_date).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })
     : '____年____月____日'
-  const contractedAt = contract.created_at
-    ? new Date(contract.created_at).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })
+  const contractedAtSrc = contractDate || contract.created_at
+  const contractedAt = contractedAtSrc
+    ? new Date(contractedAtSrc).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })
     : '____年____月____日'
 
   return (
@@ -564,22 +566,17 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc }: Contra
                     </View>
                   )
                 })}
-                {/* 搬出参考金額（搬入のみの場合、薄文字で表示） */}
-                {initialFees.filter((f) => f.memo === 'pickup_pending').map((fee) => (
-                  <View key={fee.id} style={[styles.feeTableRow, { backgroundColor: '#fafafa' }]}>
-                    <Text style={[styles.feeTableCell, styles.colItem, { color: '#aaaaaa' }]}>{fee.label}</Text>
-                    <Text style={[styles.feeTableCell, styles.colDesc, { color: '#aaaaaa' }]}>解約時別途</Text>
-                    <Text style={[styles.feeTableCell, styles.colUnitEx, { color: '#aaaaaa' }]}>{fmt(fee.amount)}</Text>
-                    <Text style={[styles.feeTableCell, styles.colAmtIn, { color: '#aaaaaa' }]}>
-                      {fmt(Math.round(fee.amount * 1.1))}
-                    </Text>
-                  </View>
-                ))}
                 <View style={styles.feeSubtotalRow}>
                   <Text style={styles.feeSubtotalLabel}>初期費用 合計</Text>
                   <Text style={styles.feeSubtotalValue}>{fmt(initialFeesTotal)}</Text>
                 </View>
               </View>
+              {/* 搬出参考金額（欄外・薄文字） */}
+              {initialFees.filter((f) => f.memo === 'pickup_pending').map((fee) => (
+                <Text key={fee.id} style={{ fontSize: 7, color: '#aaaaaa', marginTop: 2, marginLeft: 2 }}>
+                  ＊参考搬出費用 {fmt(Math.round(fee.amount * 1.1))}（税込）
+                </Text>
+              ))}
             </>
           )}
 

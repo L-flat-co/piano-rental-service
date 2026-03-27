@@ -35,7 +35,7 @@ function registerFonts() {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -67,12 +67,16 @@ export async function GET(
     const logoPath = path.join(process.cwd(), 'public', 'images', 'logo.png')
     const logoSrc = fs.existsSync(logoPath) ? logoPath : null
 
+    // ?date=YYYY-MM-DD で契約日を指定可能
+    const contractDate = request.nextUrl.searchParams.get('date') || null
+
     const buffer = await renderToBuffer(
       <ContractPDF
         contract={contract}
         initialFees={(initialFees as ContractSpotFee[]) || []}
         settings={settings}
         logoSrc={logoSrc}
+        contractDate={contractDate}
       />
     )
 
