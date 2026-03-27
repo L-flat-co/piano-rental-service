@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { Contract, RentalPlan, RentalOption, ActionResult, ContractPeriod } from '@/types'
+import { Contract, RentalPlan, RentalOption, ActionResult, ContractPeriod, PaymentMethod } from '@/types'
 
 export interface ContractFormData {
   customer_id: string
@@ -12,6 +12,7 @@ export interface ContractFormData {
   contract_period: ContractPeriod
   start_date: string
   billing_day: number
+  payment_method: PaymentMethod
   memo: string
 }
 
@@ -148,6 +149,7 @@ export async function createContract(
       origin: 'manual',
       start_date: formData.start_date,
       billing_day: formData.billing_day,
+      payment_method: formData.payment_method || 'bank_transfer',
       memo: formData.memo || null,
     })
     .select()
@@ -209,6 +211,7 @@ export async function updateContract(
       contract_period: formData.contract_period,
       start_date: formData.start_date,
       billing_day: formData.billing_day,
+      payment_method: formData.payment_method || 'bank_transfer',
       memo: formData.memo || null,
     })
     .eq('id', id)

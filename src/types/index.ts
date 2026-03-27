@@ -124,16 +124,17 @@ export interface Contract {
   id: string
   service_type: 'home_school'
   customer_id: string
-  application_id: string | null // 将来: applicationsテーブル
+  application_id: string | null
   piano_id: string
   plan_id: string
   contract_period: ContractPeriod
-  option_ids: string[]          // 選択中の月額オプションID配列
+  option_ids: string[]
   status: ContractStatus
   origin: ContractOrigin
   start_date: string
   end_date: string | null
   billing_day: number           // 1〜28
+  payment_method: PaymentMethod | null
   memo: string | null
   created_at: string
   updated_at: string

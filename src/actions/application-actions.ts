@@ -255,6 +255,7 @@ export async function convertToContract(
       origin: 'web',
       start_date: convertData.start_date,
       billing_day: convertData.billing_day,
+      payment_method: 'bank_transfer',
       memo: convertData.memo || null,
     })
     .select('id')

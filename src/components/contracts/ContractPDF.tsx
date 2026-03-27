@@ -332,6 +332,15 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc }: Contra
   const piano    = contract.piano
   const plan     = contract.plan
 
+  // 支払方法
+  const paymentMethodLabels: Record<string, string> = {
+    bank_transfer: '銀行振込',
+    cash: '現金',
+    card: 'クレジットカード',
+    other: 'その他',
+  }
+  const paymentMethodText = paymentMethodLabels[contract.payment_method || 'bank_transfer'] || '銀行振込'
+
   const cntNumber = contractNumber(contract)
 
   // 借主情報
@@ -636,7 +645,7 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc }: Contra
           <View style={[styles.infoTable, { marginTop: 2, marginBottom: 6 }]}>
             <View style={styles.payRow}>
               <Text style={styles.payLabel}>支払方法</Text>
-              <Text style={styles.payValue}>□ 銀行振込　□ 口座振替　□ クレジットカード</Text>
+              <Text style={styles.payValue}>{paymentMethodText}</Text>
             </View>
             <View style={styles.payRow}>
               <Text style={styles.payLabel}>振込先</Text>

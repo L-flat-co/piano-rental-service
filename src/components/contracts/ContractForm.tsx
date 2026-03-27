@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { ContractFormData, createContract, updateContract } from '@/actions/contract-actions'
-import { Contract, Customer, Piano, RentalPlan, RentalOption, SpotFeeTypeMaster } from '@/types'
+import { Contract, Customer, Piano, RentalPlan, RentalOption, SpotFeeTypeMaster, PaymentMethod } from '@/types'
 import { formatCurrency } from '@/lib/utils'
 import { InitialFeeSection, InitialFeeItem, TransportType } from '@/components/shared/InitialFeeSection'
 
@@ -35,6 +35,7 @@ export function ContractForm({
     contract_period: contract?.contract_period || 'yearly',
     start_date: contract?.start_date || '',
     billing_day: contract?.billing_day || 1,
+    payment_method: (contract?.payment_method as PaymentMethod) || 'bank_transfer',
     memo: contract?.memo || '',
   })
   const [initialFees, setInitialFees] = useState<InitialFeeItem[]>([])
@@ -299,6 +300,21 @@ export function ContractForm({
               <span className="text-sm text-gray-600">日</span>
             </div>
           </div>
+        </div>
+
+        {/* 支払方法 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">支払方法</label>
+          <select
+            value={formData.payment_method}
+            onChange={(e) => setFormData((prev) => ({ ...prev, payment_method: e.target.value as PaymentMethod }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="bank_transfer">銀行振込</option>
+            <option value="cash">現金</option>
+            <option value="card">クレジットカード</option>
+            <option value="other">その他</option>
+          </select>
         </div>
       </div>
 
