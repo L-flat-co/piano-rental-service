@@ -207,6 +207,7 @@ export async function updateContract(
       plan_id: formData.plan_id,
       option_ids: formData.option_ids,
       contract_period: formData.contract_period,
+      start_date: formData.start_date,
       billing_day: formData.billing_day,
       memo: formData.memo || null,
     })
