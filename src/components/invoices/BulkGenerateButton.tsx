@@ -13,18 +13,22 @@ function getTodayStr(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 }
 
-function getDefaultDueDate(): string {
-  const now = new Date()
-  // 翌月末日
-  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 2, 0)
-  return `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-${String(nextMonth.getDate()).padStart(2, '0')}`
+function calcDueDate(issueDate: string, dueDays: number): string {
+  const d = new Date(issueDate)
+  d.setDate(d.getDate() + dueDays)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-export function BulkGenerateButton() {
+interface BulkGenerateButtonProps {
+  invoiceDueDays?: number
+}
+
+export function BulkGenerateButton({ invoiceDueDays = 30 }: BulkGenerateButtonProps) {
+  const todayStr = getTodayStr()
   const [open, setOpen] = useState(false)
   const [billingMonth, setBillingMonth] = useState(getCurrentMonth)
-  const [issueDate, setIssueDate] = useState(getTodayStr)
-  const [dueDate, setDueDate] = useState(getDefaultDueDate)
+  const [issueDate, setIssueDate] = useState(todayStr)
+  const [dueDate, setDueDate] = useState(calcDueDate(todayStr, invoiceDueDays))
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<{
@@ -163,7 +167,7 @@ export function BulkGenerateButton() {
                       type="date"
                       required
                       value={issueDate}
-                      onChange={(e) => setIssueDate(e.target.value)}
+                      onChange={(e) => { setIssueDate(e.target.value); if (e.target.value) setDueDate(calcDueDate(e.target.value, invoiceDueDays)) }}
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>

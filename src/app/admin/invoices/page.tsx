@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getInvoices } from '@/actions/invoice-actions'
+import { getSettings } from '@/actions/settings-actions'
 import { INVOICE_STATUS_LABELS, INVOICE_STATUS_COLORS } from '@/lib/constants'
 import { formatDate, formatCurrency, formatYearMonth } from '@/lib/utils'
 import { InvoiceStatus } from '@/types'
@@ -12,7 +13,8 @@ export default async function InvoicesPage({
 }) {
   const query = searchParams.q || ''
   const statusFilter = searchParams.status as InvoiceStatus | undefined
-  let invoices = await getInvoices(query)
+  const [allInvoices, settings] = await Promise.all([getInvoices(query), getSettings()])
+  let invoices = allInvoices
 
   if (statusFilter) {
     invoices = invoices.filter((inv) => inv.status === statusFilter)
@@ -36,7 +38,7 @@ export default async function InvoicesPage({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <BulkGenerateButton />
+          <BulkGenerateButton invoiceDueDays={settings?.invoice_due_days ?? 30} />
           <Link
             href="/admin/invoices/new"
             className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md"

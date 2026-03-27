@@ -538,16 +538,31 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc }: Contra
                   <Text style={[styles.feeTableHeaderCell, styles.colUnitEx]}>単価（税抜）</Text>
                   <Text style={[styles.feeTableHeaderCell, styles.colAmtIn]}>金額（税込）</Text>
                 </View>
-                {initialFees.map((fee, i) => (
-                  <View
-                    key={fee.id}
-                    style={[styles.feeTableRow, i % 2 === 1 ? styles.feeTableRowAlt : {}]}
-                  >
-                    <Text style={[styles.feeTableCell, styles.colItem]}>{fee.label}</Text>
-                    <Text style={[styles.feeTableCell, styles.colDesc]}>{fee.memo || ''}</Text>
-                    <Text style={[styles.feeTableCell, styles.colUnitEx]}>{fmt(fee.amount)}</Text>
-                    <Text style={[styles.feeTableCell, styles.colAmtIn]}>
-                      {fmt(Math.round(fee.amount * fee.quantity * 1.1))}
+                {initialFees.filter((f) => f.memo !== 'pickup_pending').map((fee, i) => {
+                  // memo から内部データ（pickup_estimate:xxx）を除去して表示用に変換
+                  const displayMemo = fee.memo?.startsWith('pickup_estimate:') ? '搬入' : (fee.memo || '')
+                  return (
+                    <View
+                      key={fee.id}
+                      style={[styles.feeTableRow, i % 2 === 1 ? styles.feeTableRowAlt : {}]}
+                    >
+                      <Text style={[styles.feeTableCell, styles.colItem]}>{fee.label}</Text>
+                      <Text style={[styles.feeTableCell, styles.colDesc]}>{displayMemo}</Text>
+                      <Text style={[styles.feeTableCell, styles.colUnitEx]}>{fmt(fee.amount)}</Text>
+                      <Text style={[styles.feeTableCell, styles.colAmtIn]}>
+                        {fmt(Math.round(fee.amount * fee.quantity * 1.1))}
+                      </Text>
+                    </View>
+                  )
+                })}
+                {/* 搬出参考金額（搬入のみの場合、薄文字で表示） */}
+                {initialFees.filter((f) => f.memo === 'pickup_pending').map((fee) => (
+                  <View key={fee.id} style={[styles.feeTableRow, { backgroundColor: '#fafafa' }]}>
+                    <Text style={[styles.feeTableCell, styles.colItem, { color: '#aaaaaa' }]}>{fee.label}</Text>
+                    <Text style={[styles.feeTableCell, styles.colDesc, { color: '#aaaaaa' }]}>解約時別途</Text>
+                    <Text style={[styles.feeTableCell, styles.colUnitEx, { color: '#aaaaaa' }]}>{fmt(fee.amount)}</Text>
+                    <Text style={[styles.feeTableCell, styles.colAmtIn, { color: '#aaaaaa' }]}>
+                      {fmt(Math.round(fee.amount * 1.1))}
                     </Text>
                   </View>
                 ))}

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { SystemSettings, ActionResult } from '@/types'
 
 export interface SettingsFormData {
@@ -27,19 +28,24 @@ export async function getSettings(): Promise<SystemSettings | null> {
 export async function updateSettings(
   formData: SettingsFormData
 ): Promise<ActionResult<void>> {
+  // 認証チェック（Server Action からの呼び出し確認）
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: '認証が必要です' }
 
-  // system_settings は1レコードのみ
-  const { data: existing } = await supabase
+  // Admin Client で更新（RLS をバイパス）
+  const adminSupabase = createAdminClient()
+
+  const { data: existing } = await adminSupabase
     .from('system_settings')
     .select('id')
     .single()
 
   if (!existing) {
-    return { success: false, error: 'システム設定が見つかりません' }
+    return { success: false, error: 'システム設定が見つかりません。seed.sql を実行してください。' }
   }
 
-  const { error } = await supabase
+  const { data: updated, error } = await adminSupabase
     .from('system_settings')
     .update({
       company_name: formData.company_name,
@@ -55,9 +61,15 @@ export async function updateSettings(
       email_body_template: formData.email_body_template || null,
     })
     .eq('id', existing.id)
+    .select()
+    .single()
 
   if (error) {
     return { success: false, error: error.message }
+  }
+
+  if (!updated) {
+    return { success: false, error: '設定の更新に失敗しました' }
   }
 
   revalidatePath('/admin/settings')

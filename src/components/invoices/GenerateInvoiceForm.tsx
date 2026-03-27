@@ -8,22 +8,27 @@ import { formatCurrency } from '@/lib/utils'
 
 interface GenerateInvoiceFormProps {
   contracts: Contract[]
+  invoiceDueDays?: number
 }
 
-export function GenerateInvoiceForm({ contracts }: GenerateInvoiceFormProps) {
+function calcDueDate(issueDate: string, dueDays: number): string {
+  const d = new Date(issueDate)
+  d.setDate(d.getDate() + dueDays)
+  return d.toISOString().split('T')[0]
+}
+
+export function GenerateInvoiceForm({ contracts, invoiceDueDays = 30 }: GenerateInvoiceFormProps) {
   const router = useRouter()
 
   const today = new Date()
   const defaultBillingMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
-  // デフォルト支払い期限: 翌月末
-  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
-  const defaultDueDate = nextMonth.toISOString().split('T')[0]
+  const todayStr = today.toISOString().split('T')[0]
 
   const [formData, setFormData] = useState<GenerateInvoiceInput>({
     contract_id: '',
     billing_month: defaultBillingMonth,
-    issue_date: today.toISOString().split('T')[0],
-    due_date: defaultDueDate,
+    issue_date: todayStr,
+    due_date: calcDueDate(todayStr, invoiceDueDays),
     notes: '',
   })
   const [error, setError] = useState<string | null>(null)
@@ -38,7 +43,14 @@ export function GenerateInvoiceForm({ contracts }: GenerateInvoiceFormProps) {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData((prev) => {
+      const next = { ...prev, [name]: value }
+      // 発行日変更時に支払期限を自動再計算
+      if (name === 'issue_date' && value) {
+        next.due_date = calcDueDate(value, invoiceDueDays)
+      }
+      return next
+    })
   }
 
   async function handleSubmit(e: React.FormEvent) {

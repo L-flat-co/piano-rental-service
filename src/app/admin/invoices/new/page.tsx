@@ -1,9 +1,12 @@
 import { getContracts } from '@/actions/contract-actions'
+import { getSettings } from '@/actions/settings-actions'
 import { GenerateInvoiceForm } from '@/components/invoices/GenerateInvoiceForm'
 
 export default async function NewInvoicePage() {
-  // アクティブな契約のみ（JOIN情報付き）
-  const allContracts = await getContracts()
+  const [allContracts, settings] = await Promise.all([
+    getContracts(),
+    getSettings(),
+  ])
   const activeContracts = allContracts.filter((c) => c.status === 'active')
 
   return (
@@ -14,7 +17,10 @@ export default async function NewInvoicePage() {
           契約と対象月を選択すると、プラン・オプション・スポット費用を自動集計します
         </p>
       </div>
-      <GenerateInvoiceForm contracts={activeContracts} />
+      <GenerateInvoiceForm
+        contracts={activeContracts}
+        invoiceDueDays={settings?.invoice_due_days ?? 30}
+      />
     </div>
   )
 }
