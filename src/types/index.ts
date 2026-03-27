@@ -135,6 +135,8 @@ export interface Contract {
   end_date: string | null
   billing_day: number           // 1〜28
   payment_method: PaymentMethod | null
+  accessories: string[]         // 付属品リスト
+  custom_options: { name: string; monthly_fee: number }[]  // カスタム月額オプション
   memo: string | null
   created_at: string
   updated_at: string

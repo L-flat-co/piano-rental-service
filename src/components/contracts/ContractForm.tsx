@@ -36,6 +36,8 @@ export function ContractForm({
     start_date: contract?.start_date || '',
     billing_day: contract?.billing_day || 1,
     payment_method: (contract?.payment_method as PaymentMethod) || 'bank_transfer',
+    accessories: contract?.accessories || ['ピアノ椅子', 'インシュレーター'],
+    custom_options: contract?.custom_options || [],
     memo: contract?.memo || '',
   })
   const [initialFees, setInitialFees] = useState<InitialFeeItem[]>([])
@@ -80,8 +82,9 @@ export function ContractForm({
     const optionFee = options
       .filter((o) => formData.option_ids.includes(o.id))
       .reduce((sum, o) => sum + o.monthly_fee, 0)
-    return planFee + optionFee
-  }, [selectedPlan, options, formData.option_ids])
+    const customOptionFee = formData.custom_options.reduce((sum, o) => sum + o.monthly_fee, 0)
+    return planFee + optionFee + customOptionFee
+  }, [selectedPlan, options, formData.option_ids, formData.custom_options])
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -231,6 +234,7 @@ export function ContractForm({
           </div>
         </div>
 
+        {/* 月額オプション（マスタ） */}
         {options.length > 0 && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">月額オプション（複数選択可）</label>
@@ -248,6 +252,41 @@ export function ContractForm({
             </div>
           </div>
         )}
+
+        {/* カスタム月額オプション */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">カスタム月額オプション</label>
+          {formData.custom_options.map((co, i) => (
+            <div key={i} className="flex items-center gap-2 mb-2">
+              <input type="text" value={co.name} placeholder="オプション名"
+                onChange={(e) => {
+                  const next = [...formData.custom_options]
+                  next[i] = { ...next[i], name: e.target.value }
+                  setFormData((prev) => ({ ...prev, custom_options: next }))
+                }}
+                className="flex-1 border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-gray-400">¥</span>
+                <input type="number" min={0} value={co.monthly_fee}
+                  onChange={(e) => {
+                    const next = [...formData.custom_options]
+                    next[i] = { ...next[i], monthly_fee: parseInt(e.target.value) || 0 }
+                    setFormData((prev) => ({ ...prev, custom_options: next }))
+                  }}
+                  className="w-20 border border-gray-300 rounded-md px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                <span className="text-xs text-gray-400">/月</span>
+              </div>
+              <button type="button"
+                onClick={() => setFormData((prev) => ({ ...prev, custom_options: prev.custom_options.filter((_, j) => j !== i) }))}
+                className="text-gray-400 hover:text-red-500 text-sm">✕</button>
+            </div>
+          ))}
+          <button type="button"
+            onClick={() => setFormData((prev) => ({ ...prev, custom_options: [...prev.custom_options, { name: '', monthly_fee: 0 }] }))}
+            className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+            + カスタムオプションを追加
+          </button>
+        </div>
 
         {selectedPlan && (
           <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
@@ -315,6 +354,53 @@ export function ContractForm({
             <option value="card">クレジットカード</option>
             <option value="other">その他</option>
           </select>
+        </div>
+      </div>
+
+      {/* 付属品 */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h2 className="text-base font-semibold text-gray-900 mb-4">付属品</h2>
+        <div className="space-y-2">
+          {['ピアノ椅子', 'インシュレーター', '敷板', 'ヘッドホン'].map((item) => (
+            <label key={item} className="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" checked={formData.accessories.includes(item)}
+                onChange={() => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    accessories: prev.accessories.includes(item)
+                      ? prev.accessories.filter((a) => a !== item)
+                      : [...prev.accessories, item],
+                  }))
+                }}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded" />
+              <span className="text-sm text-gray-700 group-hover:text-gray-900">{item}</span>
+            </label>
+          ))}
+          {/* カスタム付属品 */}
+          {formData.accessories
+            .filter((a) => !['ピアノ椅子', 'インシュレーター', '敷板', 'ヘッドホン'].includes(a))
+            .map((a, i) => (
+              <div key={`custom-${i}`} className="flex items-center gap-2 pl-7">
+                <input type="text" value={a}
+                  onChange={(e) => {
+                    const customs = formData.accessories.filter((x) => !['ピアノ椅子', 'インシュレーター', '敷板', 'ヘッドホン'].includes(x))
+                    customs[i] = e.target.value
+                    const standards = formData.accessories.filter((x) => ['ピアノ椅子', 'インシュレーター', '敷板', 'ヘッドホン'].includes(x))
+                    setFormData((prev) => ({ ...prev, accessories: [...standards, ...customs] }))
+                  }}
+                  className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                <button type="button"
+                  onClick={() => {
+                    setFormData((prev) => ({ ...prev, accessories: prev.accessories.filter((x) => x !== a) }))
+                  }}
+                  className="text-gray-400 hover:text-red-500 text-sm">✕</button>
+              </div>
+            ))}
+          <button type="button"
+            onClick={() => setFormData((prev) => ({ ...prev, accessories: [...prev.accessories, ''] }))}
+            className="text-xs text-blue-600 hover:text-blue-800 font-medium ml-7">
+            + その他の付属品を追加
+          </button>
         </div>
       </div>
 

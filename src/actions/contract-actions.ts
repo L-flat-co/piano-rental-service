@@ -13,6 +13,8 @@ export interface ContractFormData {
   start_date: string
   billing_day: number
   payment_method: PaymentMethod
+  accessories: string[]
+  custom_options: { name: string; monthly_fee: number }[]
   memo: string
 }
 
@@ -150,6 +152,8 @@ export async function createContract(
       start_date: formData.start_date,
       billing_day: formData.billing_day,
       payment_method: formData.payment_method || 'bank_transfer',
+      accessories: formData.accessories || [],
+      custom_options: formData.custom_options || [],
       memo: formData.memo || null,
     })
     .select()
@@ -212,6 +216,8 @@ export async function updateContract(
       start_date: formData.start_date,
       billing_day: formData.billing_day,
       payment_method: formData.payment_method || 'bank_transfer',
+      accessories: formData.accessories || [],
+      custom_options: formData.custom_options || [],
       memo: formData.memo || null,
     })
     .eq('id', id)

@@ -366,7 +366,8 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc, contract
   // 月額合計
   const planFee = plan?.monthly_fee || 0
   const optionsFee = (contract.options || []).reduce((s, o) => s + o.monthly_fee, 0)
-  const monthlyTotal = planFee + optionsFee
+  const customOptionsFee = (contract.custom_options || []).reduce((s, o) => s + o.monthly_fee, 0)
+  const monthlyTotal = planFee + optionsFee + customOptionsFee
 
   // 初期費用合計（税込換算）
   const initialFeesTotal = initialFees.reduce((s, f) => s + Math.round(f.amount * f.quantity * 1.1), 0)
@@ -494,7 +495,11 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc, contract
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>付属品</Text>
-              <Text style={styles.infoValue}>ベンチ椅子・インシュレーター</Text>
+              <Text style={styles.infoValue}>
+                {(contract.accessories && contract.accessories.length > 0)
+                  ? contract.accessories.filter(Boolean).join('・')
+                  : 'ピアノ椅子・インシュレーター'}
+              </Text>
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>設置場所</Text>
@@ -612,6 +617,20 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc, contract
                   {fmt(Math.round(opt.monthly_fee / 1.1))}
                 </Text>
                 <Text style={[styles.feeTableCell, styles.colAmtIn]}>{fmt(opt.monthly_fee)}</Text>
+              </View>
+            ))}
+            {/* カスタム月額オプション */}
+            {(contract.custom_options || []).map((co, i) => (
+              <View
+                key={`custom-${i}`}
+                style={[styles.feeTableRow, (contract.options?.length || 0) % 2 !== 0 ? styles.feeTableRowAlt : {}]}
+              >
+                <Text style={[styles.feeTableCell, styles.colItem]}>{co.name}</Text>
+                <Text style={[styles.feeTableCell, styles.colDesc]}></Text>
+                <Text style={[styles.feeTableCell, styles.colUnitEx]}>
+                  {fmt(Math.round(co.monthly_fee / 1.1))}
+                </Text>
+                <Text style={[styles.feeTableCell, styles.colAmtIn]}>{fmt(co.monthly_fee)}</Text>
               </View>
             ))}
             <View style={styles.feeSubtotalRow}>
