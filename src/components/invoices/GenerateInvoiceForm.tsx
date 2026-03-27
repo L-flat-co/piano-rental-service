@@ -11,12 +11,11 @@ interface GenerateInvoiceFormProps {
   invoiceDueDays?: number
 }
 
-/** 対象月 + billing_day から支払期限（billing_day の前日）を算出 */
+/** 対象月 + billing_day から支払期限（billing_day の前日）を算出。29〜31日は28日扱い */
 function calcDueDateFromBilling(billingMonth: string, billingDay: number): string {
   const [y, m] = billingMonth.split('-').map(Number)
-  // billing_day の前日 = 支払期限
-  const due = new Date(y, m - 1, billingDay - 1)
-  // billing_day が 1 の場合は前月末日になる
+  const safeDay = Math.min(billingDay, 28)
+  const due = new Date(y, m - 1, safeDay - 1)
   return `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, '0')}-${String(due.getDate()).padStart(2, '0')}`
 }
 

@@ -355,10 +355,11 @@ export interface BulkGenerateInput {
   notes?: string
 }
 
-/** billing_dayの前日 = 支払期限 */
+/** billing_dayの前日 = 支払期限（29〜31日は28日として扱う） */
 function calcDueDateFromBilling(billingMonth: string, billingDay: number): string {
   const [y, m] = billingMonth.split('-').map(Number)
-  const due = new Date(y, m - 1, billingDay - 1)
+  const safeDay = Math.min(billingDay, 28)
+  const due = new Date(y, m - 1, safeDay - 1)
   return `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, '0')}-${String(due.getDate()).padStart(2, '0')}`
 }
 
