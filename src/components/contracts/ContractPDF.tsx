@@ -316,8 +316,8 @@ const RECEIPT_REPLACEMENT_TEXT: Record<string, string> = {
   bank_transfer: '振込証明書（受領書）をもって領収書に代えさせていただきます。',
   cash: '',
   card: 'カード会社の明細書をもって領収書に代えさせていただきます。',
-  other: '記帳された預金通帳（引き落としの記録）をもって領収書に代えさせていただきます。',
-  // other = 口座振替等
+  direct_debit: '記帳された預金通帳（引き落としの記録）をもって領収書に代えさせていただきます。',
+  other: '',
 }
 
 function getContractConditions(paymentMethod: string): string[] {
@@ -355,6 +355,7 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc, contract
     bank_transfer: '銀行振込',
     cash: '現金',
     card: 'クレジットカード',
+    direct_debit: '口座振替',
     other: 'その他',
   }
   const paymentMethodText = paymentMethodLabels[contract.payment_method || 'bank_transfer'] || '銀行振込'

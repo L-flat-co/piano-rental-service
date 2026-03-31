@@ -7,6 +7,7 @@ const PAYMENT_METHOD_LABELS = {
   bank_transfer: '銀行振込',
   cash: '現金',
   card: 'カード',
+  direct_debit: '口座振替',
   other: 'その他',
 } as const
 
