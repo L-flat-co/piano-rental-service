@@ -254,7 +254,7 @@ export async function convertToContract(
       status: 'active',
       origin: 'web',
       start_date: convertData.start_date,
-      billing_day: convertData.billing_day,
+      billing_day: Math.min(new Date(convertData.start_date).getDate() || 1, 28),
       payment_method: 'bank_transfer',
       memo: convertData.memo || null,
     })

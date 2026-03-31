@@ -324,21 +324,16 @@ export function ContractForm({
             <input type="date" name="start_date" value={formData.start_date} onChange={handleChange} required
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              請求日 <span className="text-red-500">*</span>
-            </label>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">毎月</span>
-              <select name="billing_day" value={formData.billing_day} onChange={handleChange}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-              <span className="text-sm text-gray-600">日</span>
+          {/* 請求日は start_date から自動決定（表示のみ） */}
+          {formData.start_date && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">支払期限</label>
+              <p className="text-sm text-gray-600 mt-2">
+                毎月 {Math.max(Math.min(new Date(formData.start_date).getDate(), 28) - 1, 1)} 日
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">開始日から自動設定</p>
             </div>
-          </div>
+          )}
         </div>
 
         {/* 支払方法 */}

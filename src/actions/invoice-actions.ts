@@ -355,11 +355,13 @@ export interface BulkGenerateInput {
   notes?: string
 }
 
-/** billing_dayの前日 = 支払期限（29〜31日は28日として扱う） */
-function calcDueDateFromBilling(billingMonth: string, billingDay: number): string {
+/** start_dateの日付-1 = 支払期限（29〜31日は28日として扱う） */
+function calcDueDateFromStartDate(billingMonth: string, startDate: string): string {
   const [y, m] = billingMonth.split('-').map(Number)
-  const safeDay = Math.min(billingDay, 28)
-  const due = new Date(y, m - 1, safeDay - 1)
+  const startDay = new Date(startDate).getDate() || 1
+  const safeDay = Math.min(startDay, 28)
+  const dueDay = Math.max(safeDay - 1, 1)
+  const due = new Date(y, m - 1, dueDay)
   return `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, '0')}-${String(due.getDate()).padStart(2, '0')}`
 }
 
@@ -500,11 +502,11 @@ export async function bulkGenerateInvoices(
     const taxAmount = Math.round(subtotal * 0.1)
     const totalAmount = subtotal + taxAmount
 
-    // 日付を契約の billing_day から自動計算（システム設定の invoice_due_days を使用）
+    // 日付を契約の start_date から自動計算（システム設定の invoice_due_days を使用）
     const { data: sysSettings } = await supabase.from('system_settings').select('invoice_due_days').single()
     const dueDays = sysSettings?.invoice_due_days ?? 14
 
-    const contractDueDate = input.due_date || calcDueDateFromBilling(input.billing_month, contract.billing_day)
+    const contractDueDate = input.due_date || calcDueDateFromStartDate(input.billing_month, contract.start_date)
     const contractIssueDate = input.issue_date || calcIssueDateFromDue(contractDueDate, dueDays)
 
     // 請求書 INSERT

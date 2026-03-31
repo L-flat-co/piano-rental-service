@@ -11,11 +11,13 @@ interface GenerateInvoiceFormProps {
   invoiceDueDays?: number
 }
 
-/** 対象月 + billing_day から支払期限（billing_day の前日）を算出。29〜31日は28日扱い */
-function calcDueDateFromBilling(billingMonth: string, billingDay: number): string {
+/** start_dateの日付-1 = 支払期限（29〜31日は28日扱い） */
+function calcDueDateFromStartDate(billingMonth: string, startDate: string): string {
   const [y, m] = billingMonth.split('-').map(Number)
-  const safeDay = Math.min(billingDay, 28)
-  const due = new Date(y, m - 1, safeDay - 1)
+  const startDay = new Date(startDate).getDate() || 1
+  const safeDay = Math.min(startDay, 28)
+  const dueDay = Math.max(safeDay - 1, 1)
+  const due = new Date(y, m - 1, dueDay)
   return `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, '0')}-${String(due.getDate()).padStart(2, '0')}`
 }
 
@@ -52,7 +54,7 @@ export function GenerateInvoiceForm({ contracts, invoiceDueDays = 14 }: Generate
   function recalcDates(contractId: string, billingMonth: string) {
     const contract = contracts.find((c) => c.id === contractId)
     if (contract && billingMonth) {
-      const dueDate = calcDueDateFromBilling(billingMonth, contract.billing_day)
+      const dueDate = calcDueDateFromStartDate(billingMonth, contract.start_date)
       const issueDate = calcIssueDateFromDue(dueDate, invoiceDueDays)
       return { due_date: dueDate, issue_date: issueDate }
     }

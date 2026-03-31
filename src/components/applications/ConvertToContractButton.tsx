@@ -103,15 +103,15 @@ export function ConvertToContractButton({ applicationId, pianoType, availablePia
                   <input type="date" value={formData.start_date} required
                     onChange={(e) => set('start_date', e.target.value)} className={inputClass} />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">請求日</label>
-                  <select value={formData.billing_day}
-                    onChange={(e) => set('billing_day', parseInt(e.target.value))} className={inputClass}>
-                    {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
-                      <option key={d} value={d}>{d}日</option>
-                    ))}
-                  </select>
-                </div>
+                {formData.start_date && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">支払期限</label>
+                    <p className="text-sm text-gray-600 mt-2">
+                      毎月 {Math.max(Math.min(new Date(formData.start_date).getDate(), 28) - 1, 1)} 日
+                    </p>
+                    <p className="text-xs text-gray-400">開始日から自動設定</p>
+                  </div>
+                )}
               </div>
 
               {/* 運送費 */}

@@ -91,7 +91,7 @@ export default async function ContractsPage({
                 <th className="text-left px-4 py-3 font-medium text-gray-600">プラン / 期間</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">月額</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">開始日</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">請求日</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">支払期限</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">ステータス</th>
               </tr>
             </thead>
@@ -121,7 +121,7 @@ export default async function ContractsPage({
                     {contract.plan ? formatCurrency(contract.plan.monthly_fee) : '—'}
                   </td>
                   <td className="px-4 py-3 text-gray-600">{formatDate(contract.start_date)}</td>
-                  <td className="px-4 py-3 text-gray-600">毎月{contract.billing_day}日</td>
+                  <td className="px-4 py-3 text-gray-600">毎月{Math.max(Math.min(new Date(contract.start_date).getDate(), 28) - 1, 1)}日</td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${CONTRACT_STATUS_COLORS[contract.status]}`}

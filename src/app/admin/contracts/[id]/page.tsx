@@ -192,9 +192,11 @@ export default async function ContractDetailPage({
               </div>
               <div>
                 <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  請求日
+                  支払期限
                 </dt>
-                <dd className="mt-1 text-sm text-gray-900">毎月{contract.billing_day}日</dd>
+                <dd className="mt-1 text-sm text-gray-900">
+                  毎月{Math.max(Math.min(new Date(contract.start_date).getDate(), 28) - 1, 1)}日
+                </dd>
               </div>
               <div>
                 <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide">
