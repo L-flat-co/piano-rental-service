@@ -33,6 +33,18 @@ export default async function ContractDetailPage({
     notFound()
   }
 
+  // confirmed + 開始日到来 → active に自動更新
+  if (contract.status === 'confirmed' && contract.start_date) {
+    const today = new Date().toISOString().slice(0, 10)
+    if (contract.start_date <= today) {
+      await supabase
+        .from('contracts')
+        .update({ status: 'active' })
+        .eq('id', params.id)
+      contract.status = 'active'
+    }
+  }
+
   // スポット費用を取得
   const { data: spotFeesData } = await supabase
     .from('contract_spot_fees')
@@ -118,7 +130,7 @@ export default async function ContractDetailPage({
             contractId={contract.id}
             defaultDate={contract.created_at?.slice(0, 10) || ''}
           />
-          {contract.status === 'active' && (
+          {contract.status !== 'terminated' && (
             <>
               <Link
                 href={`/admin/contracts/${contract.id}/edit`}
@@ -126,11 +138,13 @@ export default async function ContractDetailPage({
               >
                 編集
               </Link>
-              <TerminateButton
-                contractId={contract.id}
-                customerId={contract.customer_id}
-                pickupFeeStatus={pickupFeeStatus}
-              />
+              {contract.status === 'active' && (
+                <TerminateButton
+                  contractId={contract.id}
+                  customerId={contract.customer_id}
+                  pickupFeeStatus={pickupFeeStatus}
+                />
+              )}
             </>
           )}
           <DeleteContractButton

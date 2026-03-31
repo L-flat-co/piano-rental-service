@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getContracts } from '@/actions/contract-actions'
+import { createClient } from '@/lib/supabase/server'
 import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS, CONTRACT_PERIOD_LABELS } from '@/lib/constants'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { ContractStatus } from '@/types'
@@ -12,6 +13,20 @@ export default async function ContractsPage({
   const query = searchParams.q || ''
   const statusFilter = searchParams.status as ContractStatus | undefined
   let contracts = await getContracts(query)
+
+  // confirmed + 開始日到来 → active に一括自動更新
+  const today = new Date().toISOString().slice(0, 10)
+  const toActivate = contracts.filter(
+    (c) => c.status === 'confirmed' && c.start_date && c.start_date <= today
+  )
+  if (toActivate.length > 0) {
+    const supabase = await createClient()
+    await supabase
+      .from('contracts')
+      .update({ status: 'active' })
+      .in('id', toActivate.map((c) => c.id))
+    toActivate.forEach((c) => { c.status = 'active' })
+  }
 
   if (statusFilter) {
     contracts = contracts.filter((c) => c.status === statusFilter)
@@ -64,7 +79,9 @@ export default async function ContractsPage({
           className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">すべてのステータス</option>
-          <option value="active">契約中</option>
+          <option value="draft">見積段階</option>
+          <option value="confirmed">契約確定</option>
+          <option value="active">レンタル中</option>
           <option value="suspended">一時停止</option>
           <option value="terminated">解約済み</option>
         </select>

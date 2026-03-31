@@ -147,7 +147,7 @@ export async function createContract(
       plan_id: formData.plan_id,
       option_ids: formData.option_ids,
       contract_period: formData.contract_period,
-      status: 'active',
+      status: 'draft',
       origin: 'manual',
       start_date: formData.start_date,
       billing_day: Math.min(new Date(formData.start_date).getDate() || 1, 28),

@@ -80,6 +80,14 @@ export async function GET(
       />
     )
 
+    // 契約書PDFを開いた時点で draft → confirmed に自動変更
+    if (contract.status === 'draft') {
+      await supabase
+        .from('contracts')
+        .update({ status: 'confirmed' })
+        .eq('id', params.id)
+    }
+
     // ファイル名：CNT-YYYYMM-XXXX.pdf
     const d = new Date(contract.start_date)
     const ym = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`
