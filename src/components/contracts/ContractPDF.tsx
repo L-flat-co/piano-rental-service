@@ -303,7 +303,7 @@ function contractNumber(contract: Contract): string {
   return `CNT-${ym}-${short}`
 }
 
-const CONTRACT_CONDITIONS = [
+const BASE_CONDITIONS = [
   '本契約は上記レンタル開始日より発効し、解約通知（30日前）をもって終了します。',
   '1年契約・半年契約の中途解約は、残余期間分または単月換算額の少ない方を申し受けます。',
   '調律は都度ご依頼ください（料金：¥16,500/回）。費用は別途ご請求いたします。',
@@ -311,6 +311,23 @@ const CONTRACT_CONDITIONS = [
   '天災・事故等による損傷は、あんしん楽器プランご加入の場合は補償対象となります。',
   '楽器レンタルサービス利用規約（www.l-flat.co.jp/rental-kiyaku）が本契約に適用されます。',
 ]
+
+const RECEIPT_REPLACEMENT_TEXT: Record<string, string> = {
+  bank_transfer: '振込証明書（受領書）をもって領収書に代えさせていただきます。',
+  cash: '',
+  card: 'カード会社の明細書をもって領収書に代えさせていただきます。',
+  other: '記帳された預金通帳（引き落としの記録）をもって領収書に代えさせていただきます。',
+  // other = 口座振替等
+}
+
+function getContractConditions(paymentMethod: string): string[] {
+  const conditions = [...BASE_CONDITIONS]
+  const receiptText = RECEIPT_REPLACEMENT_TEXT[paymentMethod]
+  if (receiptText) {
+    conditions.push(receiptText)
+  }
+  return conditions
+}
 
 interface ContractPDFProps {
   contract: Contract
@@ -680,9 +697,9 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc, contract
             <Text style={styles.sectionHeaderText}>契約条件</Text>
           </View>
           <View style={{ marginTop: 4 }}>
-            {CONTRACT_CONDITIONS.map((cond, i) => (
+            {getContractConditions(contract.payment_method || 'bank_transfer').map((cond, i) => (
               <View key={i} style={styles.conditionItem}>
-                <Text style={styles.conditionNum}>{'①②③④⑤⑥'[i]}</Text>
+                <Text style={styles.conditionNum}>{'①②③④⑤⑥⑦⑧'[i] || `${i + 1}.`}</Text>
                 <Text style={styles.conditionText}>{cond}</Text>
               </View>
             ))}

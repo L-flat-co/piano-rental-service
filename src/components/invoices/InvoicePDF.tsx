@@ -504,6 +504,15 @@ export function InvoicePDF({ invoice, settings, logoSrc, documentType = 'invoice
             </View>
           ) : null}
 
+          {/* 領収書代替文言（請求書のみ・銀行振込前提） */}
+          {documentType === 'invoice' && (
+            <View style={{ marginTop: 8 }}>
+              <Text style={{ fontSize: 7.5, color: '#999999', lineHeight: 1.5 }}>
+                ※ 振込証明書（受領書）をもって領収書に代えさせていただきます。
+              </Text>
+            </View>
+          )}
+
         </View>
 
         {/* ========== フッター ========== */}
