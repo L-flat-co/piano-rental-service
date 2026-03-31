@@ -121,13 +121,15 @@ export function SettingsForm({ settings }: SettingsFormProps) {
               </div>
             </div>
             <div>
-              <label className={labelClass}>支払期限（日数）</label>
+              <label className={labelClass}>請求書発行タイミング</label>
               <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">支払期限の</span>
                 <input type="number" min={1} max={90} value={formData.invoice_due_days}
-                  onChange={(e) => set('invoice_due_days', parseInt(e.target.value) || 30)}
-                  className={`${inputClass} w-20 text-right`} />
-                <span className="text-sm text-gray-500">日</span>
+                  onChange={(e) => set('invoice_due_days', parseInt(e.target.value) || 14)}
+                  className={`${inputClass} w-16 text-right`} />
+                <span className="text-sm text-gray-500">日前に発行</span>
               </div>
+              <p className="text-xs text-gray-400 mt-1">例: 14日前 → 支払期限が27日なら13日に発行</p>
             </div>
           </div>
           <div>
