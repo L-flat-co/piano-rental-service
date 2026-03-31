@@ -7,6 +7,7 @@ import { InvoiceStatusButtons } from '@/components/invoices/InvoiceStatusButtons
 import { AddInvoiceItemForm } from '@/components/invoices/AddInvoiceItemForm'
 import { SendEmailButton } from '@/components/invoices/SendEmailButton'
 import { RecordPaymentButton } from '@/components/payments/RecordPaymentButton'
+import { ConvertEstimateButton } from '@/components/invoices/ConvertEstimateButton'
 import { getSettings } from '@/actions/settings-actions'
 
 export default async function InvoiceDetailPage({
@@ -24,6 +25,7 @@ export default async function InvoiceDetailPage({
   }
 
   const isDraft = invoice.status === 'draft'
+  const isEstimate = invoice.invoice_number.startsWith('EST-')
 
   return (
     <div className="p-6 max-w-4xl">
@@ -61,28 +63,35 @@ export default async function InvoiceDetailPage({
               保存済みPDF
             </a>
           )}
-          <a
-            href={`/api/invoices/${invoice.id}/pdf?type=estimate`}
-            target="_blank"
-            className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium px-4 py-2 rounded-md"
-          >
-            見積書PDF
-          </a>
-          <a
-            href={`/api/invoices/${invoice.id}/pdf`}
-            target="_blank"
-            className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium px-4 py-2 rounded-md"
-          >
-            請求書PDF
-          </a>
-          {invoice.status === 'paid' && (
+          {isEstimate ? (
+            /* 見積書の場合 */
             <a
-              href={`/api/invoices/${invoice.id}/pdf?type=receipt`}
+              href={`/api/invoices/${invoice.id}/pdf?type=estimate`}
               target="_blank"
               className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium px-4 py-2 rounded-md"
             >
-              領収書PDF
+              見積書PDF
             </a>
+          ) : (
+            /* 請求書の場合 */
+            <>
+              <a
+                href={`/api/invoices/${invoice.id}/pdf`}
+                target="_blank"
+                className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium px-4 py-2 rounded-md"
+              >
+                請求書PDF
+              </a>
+              {invoice.status === 'paid' && (
+                <a
+                  href={`/api/invoices/${invoice.id}/pdf?type=receipt`}
+                  target="_blank"
+                  className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium px-4 py-2 rounded-md"
+                >
+                  領収書PDF
+                </a>
+              )}
+            </>
           )}
           <Link
             href="/admin/invoices"
@@ -207,14 +216,24 @@ export default async function InvoiceDetailPage({
 
         {/* サイドバー */}
         <div className="space-y-4">
-          {/* ステータス操作 */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">ステータス変更</h3>
-            <InvoiceStatusButtons invoiceId={invoice.id} currentStatus={invoice.status} />
-          </div>
+          {/* 見積書→請求書に変換 */}
+          {isEstimate && (
+            <div className="bg-white rounded-lg border border-blue-200 p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">見積書を請求書に変換</h3>
+              <ConvertEstimateButton invoiceId={invoice.id} />
+            </div>
+          )}
 
-          {/* 入金記録 */}
-          {invoice.status === 'issued' && invoice.customer_id && (
+          {/* ステータス操作（請求書のみ） */}
+          {!isEstimate && (
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">ステータス変更</h3>
+              <InvoiceStatusButtons invoiceId={invoice.id} currentStatus={invoice.status} />
+            </div>
+          )}
+
+          {/* 入金記録（請求書のみ） */}
+          {!isEstimate && invoice.status === 'issued' && invoice.customer_id && (
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">入金を記録</h3>
               <RecordPaymentButton

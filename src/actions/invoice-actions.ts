@@ -555,6 +555,216 @@ export async function bulkGenerateInvoices(
 }
 
 // ============================================================
+// 見積書作成（初期費用 + 初月分）
+// ============================================================
+
+export async function createEstimate(
+  contractId: string
+): Promise<ActionResult<{ id: string }>> {
+  const supabase = await createClient()
+
+  // 契約データ取得
+  const { data: contract, error: contractError } = await supabase
+    .from('contracts')
+    .select('*, plan:rental_plans(*), customer:customers(id, name)')
+    .eq('id', contractId)
+    .single()
+
+  if (contractError || !contract) {
+    return { success: false, error: '契約が見つかりません' }
+  }
+
+  // 既に見積書があるかチェック
+  const { count: existingCount } = await supabase
+    .from('invoices')
+    .select('id', { count: 'exact', head: true })
+    .eq('contract_id', contractId)
+    .like('invoice_number', 'EST-%')
+  if (existingCount && existingCount > 0) {
+    return { success: false, error: 'この契約の見積書は既に作成されています' }
+  }
+
+  // 初期費用（スポット費用）を取得
+  const { data: spotFees } = await supabase
+    .from('contract_spot_fees')
+    .select('*')
+    .eq('contract_id', contractId)
+    .eq('section', 'initial')
+    .neq('memo', 'pickup_pending')  // 搬出参考費用は除外
+    .gt('quantity', 0)
+
+  // オプション取得
+  let options: { name: string; monthly_fee: number }[] = []
+  if (contract.option_ids && contract.option_ids.length > 0) {
+    const { data: opts } = await supabase
+      .from('rental_options')
+      .select('name, monthly_fee')
+      .in('id', contract.option_ids)
+    options = opts || []
+  }
+
+  // カスタムオプション
+  const customOptions = contract.custom_options || []
+
+  // 明細行構築
+  const lineItems: Array<{
+    label: string; description: string | null; unit_price: number; quantity: number; amount: number; sort_order: number
+  }> = []
+  let sortOrder = 1
+
+  // 初期費用
+  for (const spot of spotFees || []) {
+    lineItems.push({
+      label: spot.label,
+      description: null,
+      unit_price: spot.amount,
+      quantity: spot.quantity,
+      amount: Math.round(spot.amount * spot.quantity),
+      sort_order: sortOrder++,
+    })
+  }
+
+  // 初月プラン料
+  const plan = Array.isArray(contract.plan) ? contract.plan[0] : contract.plan
+  if (plan) {
+    const feeExTax = Math.round(plan.monthly_fee / 1.1)
+    lineItems.push({
+      label: `${plan.name}（初月分）`,
+      description: null,
+      unit_price: feeExTax,
+      quantity: 1,
+      amount: feeExTax,
+      sort_order: sortOrder++,
+    })
+  }
+
+  // オプション
+  for (const opt of options) {
+    const feeExTax = Math.round(opt.monthly_fee / 1.1)
+    lineItems.push({
+      label: `${opt.name}（初月分）`,
+      description: null,
+      unit_price: feeExTax,
+      quantity: 1,
+      amount: feeExTax,
+      sort_order: sortOrder++,
+    })
+  }
+
+  // カスタムオプション
+  for (const co of customOptions) {
+    const feeExTax = Math.round(co.monthly_fee / 1.1)
+    lineItems.push({
+      label: `${co.name}（初月分）`,
+      description: null,
+      unit_price: feeExTax,
+      quantity: 1,
+      amount: feeExTax,
+      sort_order: sortOrder++,
+    })
+  }
+
+  const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0)
+  const taxAmount = Math.round(subtotal * 0.1)
+  const totalAmount = subtotal + taxAmount
+
+  // 見積書番号生成
+  const now = new Date()
+  const ym = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`
+  const prefix = `EST-${ym}-`
+  const { count } = await supabase
+    .from('invoices')
+    .select('id', { count: 'exact', head: true })
+    .like('invoice_number', `${prefix}%`)
+  const seq = String((count || 0) + 1).padStart(3, '0')
+  const estimateNumber = `${prefix}${seq}`
+
+  // 日付
+  const issueDate = now.toISOString().slice(0, 10)
+  const { data: sysSettings } = await supabase.from('system_settings').select('invoice_due_days').single()
+  const dueDays = sysSettings?.invoice_due_days ?? 14
+  const dueDate = new Date(now)
+  dueDate.setDate(dueDate.getDate() + dueDays)
+  const dueDateStr = dueDate.toISOString().slice(0, 10)
+
+  // INSERT
+  const { data: invoice, error: invoiceError } = await supabase
+    .from('invoices')
+    .insert({
+      invoice_number: estimateNumber,
+      contract_id: contractId,
+      customer_id: contract.customer_id,
+      issue_date: issueDate,
+      due_date: dueDateStr,
+      subtotal,
+      tax_amount: taxAmount,
+      total_amount: totalAmount,
+      status: 'draft',
+      notes: '初回見積書（初期費用＋初月分）',
+    })
+    .select('id')
+    .single()
+
+  if (invoiceError || !invoice) {
+    return { success: false, error: invoiceError?.message || '見積書の作成に失敗しました' }
+  }
+
+  // 明細行 INSERT
+  await supabase
+    .from('invoice_items')
+    .insert(lineItems.map((item) => ({ ...item, invoice_id: invoice.id })))
+
+  revalidatePath('/admin/invoices')
+  revalidatePath(`/admin/contracts/${contractId}`)
+  return { success: true, data: { id: invoice.id } }
+}
+
+// ============================================================
+// 見積書 → 請求書に変換
+// ============================================================
+
+export async function convertEstimateToInvoice(
+  invoiceId: string
+): Promise<ActionResult<void>> {
+  const supabase = await createClient()
+
+  const { data: invoice } = await supabase
+    .from('invoices')
+    .select('invoice_number')
+    .eq('id', invoiceId)
+    .single()
+
+  if (!invoice || !invoice.invoice_number.startsWith('EST-')) {
+    return { success: false, error: '見積書が見つかりません' }
+  }
+
+  // 新しい INV 番号を生成
+  const now = new Date()
+  const ym = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`
+  const prefix = `INV-${ym}-`
+  const { count } = await supabase
+    .from('invoices')
+    .select('id', { count: 'exact', head: true })
+    .like('invoice_number', `${prefix}%`)
+  const seq = String((count || 0) + 1).padStart(3, '0')
+  const invoiceNumber = `${prefix}${seq}`
+
+  const { error } = await supabase
+    .from('invoices')
+    .update({
+      invoice_number: invoiceNumber,
+      issue_date: now.toISOString().slice(0, 10),
+    })
+    .eq('id', invoiceId)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/admin/invoices')
+  revalidatePath(`/admin/invoices/${invoiceId}`)
+  return { success: true, data: undefined }
+}
+
+// ============================================================
 // システム設定取得（PDF用）
 // ============================================================
 

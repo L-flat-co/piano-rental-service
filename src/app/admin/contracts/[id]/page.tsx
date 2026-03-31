@@ -14,6 +14,7 @@ import type { PickupFeeStatus } from '@/components/contracts/TerminateButton'
 import { EditInitialFees } from '@/components/contracts/EditInitialFees'
 import { ContractPDFButton } from '@/components/contracts/ContractPDFButton'
 import { DeleteContractButton } from '@/components/contracts/DeleteContractButton'
+import { CreateEstimateButton } from '@/components/contracts/CreateEstimateButton'
 import { getSpotFeeTypes } from '@/actions/pricing-actions'
 import { ContractSpotFee } from '@/types'
 
@@ -112,6 +113,7 @@ export default async function ContractDetailPage({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <CreateEstimateButton contractId={contract.id} />
           <ContractPDFButton
             contractId={contract.id}
             defaultDate={contract.created_at?.slice(0, 10) || ''}
