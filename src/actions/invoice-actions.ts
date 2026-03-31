@@ -560,6 +560,22 @@ export async function bulkGenerateInvoices(
 
 export type EstimateType = 'combined' | 'initial_only' | 'monthly_only'
 
+export async function getExistingEstimates(contractId: string): Promise<{
+  id: string
+  invoice_number: string
+  notes: string | null
+  total_amount: number
+}[]> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('invoices')
+    .select('id, invoice_number, notes, total_amount')
+    .eq('contract_id', contractId)
+    .like('invoice_number', 'EST-%')
+    .order('created_at')
+  return data || []
+}
+
 export async function createEstimate(
   contractId: string,
   estimateType: EstimateType = 'combined'
@@ -577,14 +593,20 @@ export async function createEstimate(
     return { success: false, error: '契約が見つかりません' }
   }
 
-  // 既に見積書があるかチェック
+  // 同じ種類の見積書があるかチェック
+  const notesMap: Record<EstimateType, string> = {
+    combined: '初回見積書（初期費用＋初月分）',
+    initial_only: '見積書（初期費用）',
+    monthly_only: '見積書（初月分）',
+  }
   const { count: existingCount } = await supabase
     .from('invoices')
     .select('id', { count: 'exact', head: true })
     .eq('contract_id', contractId)
     .like('invoice_number', 'EST-%')
+    .eq('notes', notesMap[estimateType])
   if (existingCount && existingCount > 0) {
-    return { success: false, error: 'この契約の見積書は既に作成されています' }
+    return { success: false, error: `この種類の見積書（${notesMap[estimateType]}）は既に作成されています` }
   }
 
   // 初期費用（スポット費用）を取得
