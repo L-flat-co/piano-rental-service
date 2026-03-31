@@ -216,12 +216,25 @@ export default async function InvoiceDetailPage({
 
         {/* サイドバー */}
         <div className="space-y-4">
-          {/* 見積書→請求書に変換 */}
+          {/* 見積書→請求書に変換 + 契約を作成 */}
           {isEstimate && (
-            <div className="bg-white rounded-lg border border-blue-200 p-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">見積書を請求書に変換</h3>
-              <ConvertEstimateButton invoiceId={invoice.id} />
-            </div>
+            <>
+              <div className="bg-white rounded-lg border border-blue-200 p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">見積書を請求書に変換</h3>
+                <ConvertEstimateButton invoiceId={invoice.id} />
+              </div>
+              {!invoice.contract_id && (
+                <div className="bg-white rounded-lg border border-green-200 p-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">この見積から契約を作成</h3>
+                  <Link
+                    href={`/admin/contracts/new?from_estimate=${invoice.id}&customer_id=${invoice.customer_id}`}
+                    className="block w-full text-center bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 rounded-md"
+                  >
+                    契約を作成
+                  </Link>
+                </div>
+              )}
+            </>
           )}
 
           {/* ステータス操作（請求書のみ） */}

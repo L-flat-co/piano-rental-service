@@ -40,6 +40,12 @@ export default async function InvoicesPage({
         <div className="flex items-center gap-2">
           <BulkGenerateButton invoiceDueDays={settings?.invoice_due_days ?? 30} />
           <Link
+            href="/admin/estimates/new"
+            className="bg-white border border-blue-300 hover:bg-blue-50 text-blue-700 text-sm font-medium px-4 py-2 rounded-md"
+          >
+            + 見積書を作成
+          </Link>
+          <Link
             href="/admin/invoices/new"
             className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-md"
           >

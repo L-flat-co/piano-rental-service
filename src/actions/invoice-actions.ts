@@ -558,6 +558,156 @@ export async function bulkGenerateInvoices(
 // 見積書作成（初期費用 + 初月分）
 // ============================================================
 
+// ============================================================
+// 独立見積書作成（契約に紐づかない）
+// ============================================================
+
+export interface StandaloneEstimateInput {
+  customer_id: string
+  plan_id: string
+  option_ids: string[]
+  custom_options: { name: string; monthly_fee: number }[]
+  initial_fees: { label: string; amount: number; quantity: number }[]
+  notes: string
+}
+
+export async function createStandaloneEstimate(
+  input: StandaloneEstimateInput
+): Promise<ActionResult<{ id: string }>> {
+  const supabase = await createClient()
+
+  // プラン取得
+  const { data: plan } = await supabase
+    .from('rental_plans')
+    .select('name, monthly_fee')
+    .eq('id', input.plan_id)
+    .single()
+
+  if (!plan) {
+    return { success: false, error: 'プランが見つかりません' }
+  }
+
+  // オプション取得
+  let options: { name: string; monthly_fee: number }[] = []
+  if (input.option_ids.length > 0) {
+    const { data: opts } = await supabase
+      .from('rental_options')
+      .select('name, monthly_fee')
+      .in('id', input.option_ids)
+    options = opts || []
+  }
+
+  // 明細行構築
+  const lineItems: Array<{
+    label: string; description: string | null; unit_price: number; quantity: number; amount: number; sort_order: number
+  }> = []
+  let sortOrder = 1
+
+  // 初期費用
+  for (const fee of input.initial_fees) {
+    if (fee.amount > 0 && fee.quantity > 0) {
+      lineItems.push({
+        label: fee.label,
+        description: null,
+        unit_price: fee.amount,
+        quantity: fee.quantity,
+        amount: Math.round(fee.amount * fee.quantity),
+        sort_order: sortOrder++,
+      })
+    }
+  }
+
+  // 初月プラン料
+  const planFeeExTax = Math.round(plan.monthly_fee / 1.1)
+  lineItems.push({
+    label: `${plan.name}（初月分）`,
+    description: null,
+    unit_price: planFeeExTax,
+    quantity: 1,
+    amount: planFeeExTax,
+    sort_order: sortOrder++,
+  })
+
+  // オプション
+  for (const opt of options) {
+    const feeExTax = Math.round(opt.monthly_fee / 1.1)
+    lineItems.push({
+      label: `${opt.name}（初月分）`,
+      description: null,
+      unit_price: feeExTax,
+      quantity: 1,
+      amount: feeExTax,
+      sort_order: sortOrder++,
+    })
+  }
+
+  // カスタムオプション
+  for (const co of input.custom_options) {
+    const feeExTax = Math.round(co.monthly_fee / 1.1)
+    lineItems.push({
+      label: `${co.name}（初月分）`,
+      description: null,
+      unit_price: feeExTax,
+      quantity: 1,
+      amount: feeExTax,
+      sort_order: sortOrder++,
+    })
+  }
+
+  const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0)
+  const taxAmount = Math.round(subtotal * 0.1)
+  const totalAmount = subtotal + taxAmount
+
+  // 見積書番号生成
+  const now = new Date()
+  const ym = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`
+  const prefix = `EST-${ym}-`
+  const { count } = await supabase
+    .from('invoices')
+    .select('id', { count: 'exact', head: true })
+    .like('invoice_number', `${prefix}%`)
+  const seq = String((count || 0) + 1).padStart(3, '0')
+  const estimateNumber = `${prefix}${seq}`
+
+  // 日付
+  const issueDate = now.toISOString().slice(0, 10)
+  const { data: sysSettings } = await supabase.from('system_settings').select('invoice_due_days').single()
+  const dueDays = sysSettings?.invoice_due_days ?? 14
+  const dueDate = new Date(now)
+  dueDate.setDate(dueDate.getDate() + dueDays)
+  const dueDateStr = dueDate.toISOString().slice(0, 10)
+
+  // INSERT
+  const { data: invoice, error: invoiceError } = await supabase
+    .from('invoices')
+    .insert({
+      invoice_number: estimateNumber,
+      contract_id: null,
+      customer_id: input.customer_id,
+      issue_date: issueDate,
+      due_date: dueDateStr,
+      subtotal,
+      tax_amount: taxAmount,
+      total_amount: totalAmount,
+      status: 'draft',
+      notes: input.notes || null,
+    })
+    .select('id')
+    .single()
+
+  if (invoiceError || !invoice) {
+    return { success: false, error: invoiceError?.message || '見積書の作成に失敗しました' }
+  }
+
+  // 明細行 INSERT
+  await supabase.from('invoice_items').insert(
+    lineItems.map((item) => ({ ...item, invoice_id: invoice.id }))
+  )
+
+  revalidatePath('/admin/invoices')
+  return { success: true, data: { id: invoice.id } }
+}
+
 export type EstimateType = 'combined' | 'initial_only' | 'monthly_only'
 
 export async function getExistingEstimates(contractId: string): Promise<{
