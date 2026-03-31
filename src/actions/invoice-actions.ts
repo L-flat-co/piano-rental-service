@@ -558,8 +558,11 @@ export async function bulkGenerateInvoices(
 // 見積書作成（初期費用 + 初月分）
 // ============================================================
 
+export type EstimateType = 'combined' | 'initial_only' | 'monthly_only'
+
 export async function createEstimate(
-  contractId: string
+  contractId: string,
+  estimateType: EstimateType = 'combined'
 ): Promise<ActionResult<{ id: string }>> {
   const supabase = await createClient()
 
@@ -611,57 +614,61 @@ export async function createEstimate(
     label: string; description: string | null; unit_price: number; quantity: number; amount: number; sort_order: number
   }> = []
   let sortOrder = 1
-
-  // 初期費用
-  for (const spot of spotFees || []) {
-    lineItems.push({
-      label: spot.label,
-      description: null,
-      unit_price: spot.amount,
-      quantity: spot.quantity,
-      amount: Math.round(spot.amount * spot.quantity),
-      sort_order: sortOrder++,
-    })
-  }
-
-  // 初月プラン料
   const plan = Array.isArray(contract.plan) ? contract.plan[0] : contract.plan
-  if (plan) {
-    const feeExTax = Math.round(plan.monthly_fee / 1.1)
-    lineItems.push({
-      label: `${plan.name}（初月分）`,
-      description: null,
-      unit_price: feeExTax,
-      quantity: 1,
-      amount: feeExTax,
-      sort_order: sortOrder++,
-    })
+
+  // 初期費用（combined or initial_only）
+  if (estimateType !== 'monthly_only') {
+    for (const spot of spotFees || []) {
+      lineItems.push({
+        label: spot.label,
+        description: null,
+        unit_price: spot.amount,
+        quantity: spot.quantity,
+        amount: Math.round(spot.amount * spot.quantity),
+        sort_order: sortOrder++,
+      })
+    }
   }
 
-  // オプション
-  for (const opt of options) {
-    const feeExTax = Math.round(opt.monthly_fee / 1.1)
-    lineItems.push({
-      label: `${opt.name}（初月分）`,
-      description: null,
-      unit_price: feeExTax,
-      quantity: 1,
-      amount: feeExTax,
-      sort_order: sortOrder++,
-    })
-  }
+  // 初月プラン料（combined or monthly_only）
+  if (estimateType !== 'initial_only') {
+    if (plan) {
+      const feeExTax = Math.round(plan.monthly_fee / 1.1)
+      lineItems.push({
+        label: `${plan.name}（初月分）`,
+        description: null,
+        unit_price: feeExTax,
+        quantity: 1,
+        amount: feeExTax,
+        sort_order: sortOrder++,
+      })
+    }
 
-  // カスタムオプション
-  for (const co of customOptions) {
-    const feeExTax = Math.round(co.monthly_fee / 1.1)
-    lineItems.push({
-      label: `${co.name}（初月分）`,
-      description: null,
-      unit_price: feeExTax,
-      quantity: 1,
-      amount: feeExTax,
-      sort_order: sortOrder++,
-    })
+    // オプション
+    for (const opt of options) {
+      const feeExTax = Math.round(opt.monthly_fee / 1.1)
+      lineItems.push({
+        label: `${opt.name}（初月分）`,
+        description: null,
+        unit_price: feeExTax,
+        quantity: 1,
+        amount: feeExTax,
+        sort_order: sortOrder++,
+      })
+    }
+
+    // カスタムオプション
+    for (const co of customOptions) {
+      const feeExTax = Math.round(co.monthly_fee / 1.1)
+      lineItems.push({
+        label: `${co.name}（初月分）`,
+        description: null,
+        unit_price: feeExTax,
+        quantity: 1,
+        amount: feeExTax,
+        sort_order: sortOrder++,
+      })
+    }
   }
 
   const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0)
@@ -700,7 +707,9 @@ export async function createEstimate(
       tax_amount: taxAmount,
       total_amount: totalAmount,
       status: 'draft',
-      notes: '初回見積書（初期費用＋初月分）',
+      notes: estimateType === 'combined' ? '初回見積書（初期費用＋初月分）'
+           : estimateType === 'initial_only' ? '見積書（初期費用）'
+           : '見積書（初月分）',
     })
     .select('id')
     .single()
