@@ -345,6 +345,7 @@ export function ContractForm({
             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="bank_transfer">銀行振込</option>
+            <option value="direct_debit">口座振替</option>
             <option value="cash">現金</option>
             <option value="card">クレジットカード</option>
             <option value="other">その他</option>
