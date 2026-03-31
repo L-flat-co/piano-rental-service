@@ -13,6 +13,7 @@ import { TerminateButton } from '@/components/contracts/TerminateButton'
 import type { PickupFeeStatus } from '@/components/contracts/TerminateButton'
 import { EditInitialFees } from '@/components/contracts/EditInitialFees'
 import { ContractPDFButton } from '@/components/contracts/ContractPDFButton'
+import { DeleteContractButton } from '@/components/contracts/DeleteContractButton'
 import { getSpotFeeTypes } from '@/actions/pricing-actions'
 import { ContractSpotFee } from '@/types'
 
@@ -73,6 +74,23 @@ export default async function ContractDetailPage({
     }
   }
 
+  // 関連データ件数（抹消モーダル用）
+  const { count: invoiceCount } = await supabase
+    .from('invoices')
+    .select('id', { count: 'exact', head: true })
+    .eq('contract_id', params.id)
+  const { count: paymentCount } = await supabase
+    .from('payments')
+    .select('id', { count: 'exact', head: true })
+    .in('invoice_id',
+      (await supabase.from('invoices').select('id').eq('contract_id', params.id)).data?.map((i) => i.id) || []
+    )
+  const relatedCounts = {
+    invoices: invoiceCount || 0,
+    payments: paymentCount || 0,
+    spotFees: spotFees.length,
+  }
+
   return (
     <div className="p-6 max-w-4xl">
       {/* ヘッダー */}
@@ -113,6 +131,11 @@ export default async function ContractDetailPage({
               />
             </>
           )}
+          <DeleteContractButton
+            contractId={contract.id}
+            customerName={contract.customer?.name || ''}
+            relatedCounts={relatedCounts}
+          />
           <Link
             href="/admin/contracts"
             className="text-gray-500 hover:text-gray-700 text-sm px-3 py-2"

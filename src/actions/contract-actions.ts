@@ -413,6 +413,134 @@ export async function deleteContractSpotFee(
   return { success: true, data: undefined }
 }
 
+// ============================================================
+// 契約抹消（完全削除 or 一部保持）
+// ============================================================
+
+export interface DeleteContractOptions {
+  keepInvoices: boolean    // 請求書を残す
+  keepPayments: boolean    // 入金記録を残す
+  keepSpotFees: boolean    // スポット費用を残す
+}
+
+export async function deleteContract(
+  id: string,
+  options?: DeleteContractOptions
+): Promise<ActionResult<void>> {
+  const supabase = await createClient()
+
+  // 契約データ取得
+  const { data: contract } = await supabase
+    .from('contracts')
+    .select('piano_id')
+    .eq('id', id)
+    .single()
+
+  if (!contract) {
+    return { success: false, error: '契約が見つかりません' }
+  }
+
+  const keepInvoices = options?.keepInvoices ?? false
+  const keepPayments = options?.keepPayments ?? false
+  const keepSpotFees = options?.keepSpotFees ?? false
+
+  // 1. 入金記録を削除（keepPayments=false かつ keepInvoices=false の場合）
+  if (!keepPayments && !keepInvoices) {
+    // 請求書に紐づく入金を取得して削除
+    const { data: invoices } = await supabase
+      .from('invoices')
+      .select('id')
+      .eq('contract_id', id)
+    if (invoices && invoices.length > 0) {
+      const invoiceIds = invoices.map((inv) => inv.id)
+      await supabase
+        .from('payments')
+        .delete()
+        .in('invoice_id', invoiceIds)
+    }
+  } else if (!keepPayments && keepInvoices) {
+    // 請求書は残すが入金は削除
+    const { data: invoices } = await supabase
+      .from('invoices')
+      .select('id')
+      .eq('contract_id', id)
+    if (invoices && invoices.length > 0) {
+      const invoiceIds = invoices.map((inv) => inv.id)
+      await supabase
+        .from('payments')
+        .delete()
+        .in('invoice_id', invoiceIds)
+      // 請求書のステータスをdraftに戻す（入金削除したので）
+      await supabase
+        .from('invoices')
+        .update({ status: 'draft' })
+        .in('id', invoiceIds)
+        .eq('status', 'paid')
+    }
+  }
+
+  // 2. 請求書を削除（keepInvoices=false の場合）
+  if (!keepInvoices) {
+    // invoice_items は ON DELETE CASCADE で自動削除される
+    await supabase
+      .from('invoices')
+      .delete()
+      .eq('contract_id', id)
+  } else {
+    // 請求書は残すが contract_id の紐付けを解除
+    await supabase
+      .from('invoices')
+      .update({ contract_id: null })
+      .eq('contract_id', id)
+  }
+
+  // 3. スポット費用を削除
+  if (!keepSpotFees) {
+    await supabase
+      .from('contract_spot_fees')
+      .delete()
+      .eq('contract_id', id)
+  }
+
+  // 4. 帳票履歴を削除
+  await supabase
+    .from('documents')
+    .delete()
+    .eq('contract_id', id)
+
+  // 5. ピアノを在庫に戻す
+  if (contract.piano_id) {
+    await supabase
+      .from('pianos')
+      .update({ status: 'available' })
+      .eq('id', contract.piano_id)
+      .eq('status', 'rented')
+  }
+
+  // 6. 申込の紐付けを解除
+  await supabase
+    .from('applications')
+    .update({ contract_id: null, status: 'approved' })
+    .eq('contract_id', id)
+
+  // 7. 契約を削除
+  const { error } = await supabase
+    .from('contracts')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/admin/contracts')
+  revalidatePath('/admin/invoices')
+  revalidatePath('/admin/payments')
+  revalidatePath('/admin/pianos')
+  revalidatePath('/admin/applications')
+  return { success: true, data: undefined }
+}
+
 export async function terminateContract(
   id: string,
   endDate: string,
