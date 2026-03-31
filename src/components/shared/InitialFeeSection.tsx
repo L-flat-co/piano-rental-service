@@ -40,6 +40,8 @@ export function InitialFeeSection({
   pickupFeeEstimate,
   onPickupFeeEstimateChange,
 }: InitialFeeSectionProps) {
+  // 搬出参考金額をユーザーが手動編集したかどうか
+  const [pickupManuallyEdited, setPickupManuallyEdited] = useState(false)
   const [showCustom, setShowCustom] = useState(false)
   const [customLabel, setCustomLabel] = useState('')
   const [customAmount, setCustomAmount] = useState('')
@@ -115,7 +117,7 @@ export function InitialFeeSection({
               type="radio"
               name="transportType"
               checked={transportType === 'round_trip'}
-              onChange={() => onTransportTypeChange('round_trip')}
+              onChange={() => { onTransportTypeChange('round_trip'); setPickupManuallyEdited(false) }}
               className="w-4 h-4 text-blue-600 focus:ring-blue-500"
             />
             <span className="text-sm text-gray-900">往復</span>
@@ -125,7 +127,12 @@ export function InitialFeeSection({
               type="radio"
               name="transportType"
               checked={transportType === 'delivery_only'}
-              onChange={() => onTransportTypeChange('delivery_only')}
+              onChange={() => {
+                onTransportTypeChange('delivery_only')
+                setPickupManuallyEdited(false)
+                // 搬入のみに切り替えたら運送費と同額をセット
+                if (transportFee > 0) onPickupFeeEstimateChange(transportFee)
+              }}
               className="w-4 h-4 text-blue-600 focus:ring-blue-500"
             />
             <span className="text-sm text-gray-900">搬入のみ</span>
@@ -148,8 +155,8 @@ export function InitialFeeSection({
                   onChange={(e) => {
                     const val = parseInt(e.target.value) || 0
                     onTransportFeeChange(val)
-                    // 搬入のみの場合、搬出参考金額が未入力なら運送費と同額にする
-                    if (transportType === 'delivery_only' && pickupFeeEstimate === 0) {
+                    // 搬入のみの場合、手動編集されていなければ運送費と同額にする
+                    if (transportType === 'delivery_only' && !pickupManuallyEdited) {
                       onPickupFeeEstimateChange(val)
                     }
                   }}
@@ -176,7 +183,10 @@ export function InitialFeeSection({
                     type="number"
                     min={0}
                     value={pickupFeeEstimate || ''}
-                    onChange={(e) => onPickupFeeEstimateChange(parseInt(e.target.value) || 0)}
+                    onChange={(e) => {
+                      setPickupManuallyEdited(true)
+                      onPickupFeeEstimateChange(parseInt(e.target.value) || 0)
+                    }}
                     placeholder="35000"
                     className="border border-gray-200 rounded-md px-3 py-2 text-xs text-gray-500 w-28 pl-6 text-right focus:outline-none focus:ring-1 focus:ring-blue-400 bg-gray-50"
                   />
