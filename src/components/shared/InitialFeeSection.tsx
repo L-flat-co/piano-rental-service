@@ -145,8 +145,15 @@ export function InitialFeeSection({
                   type="number"
                   min={0}
                   value={transportFee || ''}
-                  onChange={(e) => onTransportFeeChange(parseInt(e.target.value) || 0)}
-                  placeholder={transportType === 'round_trip' ? '44000' : '19250'}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 0
+                    onTransportFeeChange(val)
+                    // 搬入のみの場合、搬出参考金額が未入力なら運送費と同額にする
+                    if (transportType === 'delivery_only' && pickupFeeEstimate === 0) {
+                      onPickupFeeEstimateChange(val)
+                    }
+                  }}
+                  placeholder="35000"
                   className={`${inputClass} w-36 pl-7 text-right`}
                 />
               </div>
@@ -170,7 +177,7 @@ export function InitialFeeSection({
                     min={0}
                     value={pickupFeeEstimate || ''}
                     onChange={(e) => onPickupFeeEstimateChange(parseInt(e.target.value) || 0)}
-                    placeholder="19250"
+                    placeholder="35000"
                     className="border border-gray-200 rounded-md px-3 py-2 text-xs text-gray-500 w-28 pl-6 text-right focus:outline-none focus:ring-1 focus:ring-blue-400 bg-gray-50"
                   />
                 </div>
