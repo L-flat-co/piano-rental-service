@@ -14,7 +14,7 @@ import type { PickupFeeStatus } from '@/components/contracts/TerminateButton'
 import { EditInitialFees } from '@/components/contracts/EditInitialFees'
 import { ContractPDFButton } from '@/components/contracts/ContractPDFButton'
 import { DeleteContractButton } from '@/components/contracts/DeleteContractButton'
-import { CreateEstimateButton } from '@/components/contracts/CreateEstimateButton'
+import { INVOICE_STATUS_LABELS, INVOICE_STATUS_COLORS } from '@/lib/constants'
 import { getSpotFeeTypes } from '@/actions/pricing-actions'
 import { ContractSpotFee } from '@/types'
 
@@ -87,6 +87,16 @@ export default async function ContractDetailPage({
     }
   }
 
+  // この契約に紐づく見積書・請求書を取得
+  const { data: relatedInvoicesData } = await supabase
+    .from('invoices')
+    .select('id, invoice_number, total_amount, status, created_at, notes')
+    .eq('contract_id', params.id)
+    .order('created_at', { ascending: false })
+  const relatedInvoices = relatedInvoicesData || []
+  const estimates = relatedInvoices.filter((inv) => inv.invoice_number.startsWith('EST-'))
+  const invoices = relatedInvoices.filter((inv) => inv.invoice_number.startsWith('INV-'))
+
   // 関連データ件数（抹消モーダル用）
   const { count: invoiceCount } = await supabase
     .from('invoices')
@@ -125,7 +135,15 @@ export default async function ContractDetailPage({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <CreateEstimateButton contractId={contract.id} />
+          <Link
+            href={`/admin/contracts/${contract.id}/estimate/new`}
+            className="flex items-center gap-1.5 bg-white border border-blue-300 hover:bg-blue-50 text-blue-700 text-sm font-medium px-3 py-2 rounded-md"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            見積書を作成
+          </Link>
           <ContractPDFButton
             contractId={contract.id}
             defaultDate={contract.created_at?.slice(0, 10) || ''}
@@ -263,6 +281,68 @@ export default async function ContractDetailPage({
               </div>
             </div>
           )}
+
+          {/* 見積書 */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-gray-900">見積書</h2>
+              <Link
+                href={`/admin/contracts/${contract.id}/estimate/new`}
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+              >
+                + 新しい見積書
+              </Link>
+            </div>
+            {estimates.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-4">見積書はまだ作成されていません</p>
+            ) : (
+              <div className="space-y-2">
+                {estimates.map((est) => (
+                  <Link key={est.id} href={`/admin/invoices/${est.id}`}
+                    className="block border border-gray-100 rounded-lg px-4 py-3 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-mono text-blue-600">{est.invoice_number}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{est.notes}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-gray-900">{formatCurrency(est.total_amount)}</p>
+                        <p className="text-xs text-gray-400">{formatDate(est.created_at)}</p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 請求書 */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-base font-semibold text-gray-900 mb-4">請求書</h2>
+            {invoices.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-4">請求書はありません</p>
+            ) : (
+              <div className="space-y-2">
+                {invoices.map((inv) => (
+                  <Link key={inv.id} href={`/admin/invoices/${inv.id}`}
+                    className="block border border-gray-100 rounded-lg px-4 py-3 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-mono text-blue-600">{inv.invoice_number}</p>
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${INVOICE_STATUS_COLORS[inv.status as keyof typeof INVOICE_STATUS_COLORS] || ''}`}>
+                          {INVOICE_STATUS_LABELS[inv.status as keyof typeof INVOICE_STATUS_LABELS] || inv.status}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-gray-900">{formatCurrency(inv.total_amount)}</p>
+                        <p className="text-xs text-gray-400">{formatDate(inv.created_at)}</p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* サイドバー：顧客・ピアノ情報 */}
