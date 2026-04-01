@@ -16,6 +16,7 @@ import { ContractPDFButton } from '@/components/contracts/ContractPDFButton'
 import { DeleteContractButton } from '@/components/contracts/DeleteContractButton'
 import { INVOICE_STATUS_LABELS, INVOICE_STATUS_COLORS } from '@/lib/constants'
 import { getSpotFeeTypes } from '@/actions/pricing-actions'
+import { InvoiceListPaginated } from '@/components/contracts/InvoiceListPaginated'
 import { ContractSpotFee } from '@/types'
 
 export default async function ContractDetailPage({
@@ -355,29 +356,7 @@ export default async function ContractDetailPage({
           {/* 請求書 */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-4">請求書</h2>
-            {invoices.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">請求書はありません</p>
-            ) : (
-              <div className="space-y-2">
-                {invoices.map((inv) => (
-                  <Link key={inv.id} href={`/admin/invoices/${inv.id}`}
-                    className="block border border-gray-100 rounded-lg px-4 py-3 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-mono text-blue-600">{inv.invoice_number}</p>
-                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${INVOICE_STATUS_COLORS[inv.status as keyof typeof INVOICE_STATUS_COLORS] || ''}`}>
-                          {INVOICE_STATUS_LABELS[inv.status as keyof typeof INVOICE_STATUS_LABELS] || inv.status}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-gray-900">{formatCurrency(inv.total_amount)}</p>
-                        <p className="text-xs text-gray-400">{formatDate(inv.created_at)}</p>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
+            <InvoiceListPaginated invoices={invoices} perPage={12} />
           </div>
       </div>
     </div>
