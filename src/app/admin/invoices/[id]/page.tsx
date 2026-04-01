@@ -8,6 +8,7 @@ import { AddInvoiceItemForm } from '@/components/invoices/AddInvoiceItemForm'
 import { SendEmailButton } from '@/components/invoices/SendEmailButton'
 import { RecordPaymentButton } from '@/components/payments/RecordPaymentButton'
 import { ConvertEstimateButton } from '@/components/invoices/ConvertEstimateButton'
+import { EditableNotes } from '@/components/invoices/EditableNotes'
 import { getSettings } from '@/actions/settings-actions'
 
 export default async function InvoiceDetailPage({
@@ -205,13 +206,8 @@ export default async function InvoiceDetailPage({
             </div>
           </div>
 
-          {/* 備考 */}
-          {invoice.notes && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-base font-semibold text-gray-900 mb-3">備考</h2>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{invoice.notes}</p>
-            </div>
-          )}
+          {/* 備考（編集可能） */}
+          <EditableNotes invoiceId={invoice.id} currentNotes={invoice.notes} />
         </div>
 
         {/* サイドバー */}

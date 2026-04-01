@@ -241,6 +241,23 @@ export async function updateInvoiceStatus(
   return { success: true, data: undefined }
 }
 
+export async function updateInvoiceNotes(
+  id: string,
+  notes: string
+): Promise<ActionResult<void>> {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('invoices')
+    .update({ notes: notes.trim() || null })
+    .eq('id', id)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath(`/admin/invoices/${id}`)
+  return { success: true, data: undefined }
+}
+
 // ============================================================
 // カスタム品目追加・削除（手動明細）
 // ============================================================
@@ -1036,7 +1053,7 @@ export async function createEstimateWithOptions(
       tax_amount: taxAmount,
       total_amount: totalAmount,
       status: 'draft',
-      notes: input.notes || '見積書',
+      notes: input.notes || null,
       estimate_metadata: {
         plan_id: input.plan_id,
         option_ids: input.option_ids,
