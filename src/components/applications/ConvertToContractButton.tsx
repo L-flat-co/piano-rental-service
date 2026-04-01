@@ -107,7 +107,7 @@ export function ConvertToContractButton({ applicationId, pianoType, availablePia
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">支払期限</label>
                     <p className="text-sm text-gray-600 mt-2">
-                      毎月 {Math.max(Math.min(new Date(formData.start_date).getDate(), 28) - 1, 1)} 日
+                      毎月 {(new Date(formData.start_date).getDate() <= 1 ? 28 : Math.min(new Date(formData.start_date).getDate(), 28) - 1)} 日
                     </p>
                     <p className="text-xs text-gray-400">開始日から自動設定</p>
                   </div>

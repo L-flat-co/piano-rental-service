@@ -140,7 +140,7 @@ export default async function ContractsPage({
                     {contract.plan ? formatCurrency(contract.plan.monthly_fee) : '—'}
                   </td>
                   <td className="px-4 py-3 text-gray-600">{formatDate(contract.start_date)}</td>
-                  <td className="px-4 py-3 text-gray-600">毎月{Math.max(Math.min(new Date(contract.start_date).getDate(), 28) - 1, 1)}日</td>
+                  <td className="px-4 py-3 text-gray-600">毎月{(new Date(contract.start_date).getDate() <= 1 ? 28 : Math.min(new Date(contract.start_date).getDate(), 28) - 1)}日</td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${CONTRACT_STATUS_COLORS[contract.status]}`}

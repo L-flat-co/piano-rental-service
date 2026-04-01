@@ -254,7 +254,7 @@ export default async function ContractDetailPage({
                   支払期限
                 </dt>
                 <dd className="mt-1 text-sm text-gray-900">
-                  毎月{Math.max(Math.min(new Date(contract.start_date).getDate(), 28) - 1, 1)}日
+                  毎月{(new Date(contract.start_date).getDate() <= 1 ? 28 : Math.min(new Date(contract.start_date).getDate(), 28) - 1)}日
                 </dd>
               </div>
               <div>

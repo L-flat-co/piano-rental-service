@@ -688,7 +688,7 @@ export function ContractPDF({ contract, initialFees, settings, logoSrc, contract
             <View style={styles.payRowLast}>
               <Text style={styles.payLabel}>支払期限</Text>
               <Text style={styles.payValue}>
-                {`毎月 ${Math.max((new Date(contract.start_date).getDate() || 1) - 1, 1)} 日（ご請求書はお支払期限の${settings?.invoice_due_days ?? 14}日ほど前に発行されます）`}
+                {`毎月 ${new Date(contract.start_date).getDate() <= 1 ? 28 : Math.min(new Date(contract.start_date).getDate(), 28) - 1} 日（ご請求書はお支払期限の${settings?.invoice_due_days ?? 14}日ほど前に発行されます）`}
               </Text>
             </View>
           </View>

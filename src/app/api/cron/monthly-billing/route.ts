@@ -50,9 +50,9 @@ export async function GET(request: NextRequest) {
     let skipped = 0
 
     for (const contract of contracts) {
-      // 支払期限日 = start_date の日 - 1（最小1）
+      // 支払期限日 = start_date の日 - 1（1日開始は28日、上限28日で2月対応）
       const startDay = new Date(contract.start_date).getDate()
-      const dueDay = Math.max(Math.min(startDay, 28) - 1, 1)
+      const dueDay = startDay <= 1 ? 28 : Math.min(startDay, 28) - 1
 
       // 発行日 = 支払期限日 - invoice_due_days
       // 月をまたぐ場合を考慮
