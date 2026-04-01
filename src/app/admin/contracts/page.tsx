@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { CONTRACT_STATUS_LABELS, CONTRACT_STATUS_COLORS, CONTRACT_PERIOD_LABELS } from '@/lib/constants'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { ContractStatus } from '@/types'
+import { BulkGenerateButton } from '@/components/invoices/BulkGenerateButton'
 
 export default async function ContractsPage({
   searchParams,
@@ -45,6 +46,7 @@ export default async function ContractsPage({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <BulkGenerateButton />
           <a
             href="/api/contracts/export"
             className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium px-4 py-2 rounded-md flex items-center gap-1.5"

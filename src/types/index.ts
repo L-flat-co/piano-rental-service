@@ -214,6 +214,12 @@ export interface Invoice {
   status: InvoiceStatus
   notes: string | null
   pdf_url: string | null        // Supabase Storage の公開 URL
+  estimate_metadata: {          // 見積書のメタデータ（EST-*のみ）
+    plan_id: string
+    option_ids: string[]
+    custom_options: { name: string; monthly_fee: number }[]
+    initial_fees: { label: string; amount: number; quantity: number }[]
+  } | null
   created_at: string
   updated_at: string
 

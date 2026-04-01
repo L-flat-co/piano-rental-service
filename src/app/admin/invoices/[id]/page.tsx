@@ -221,7 +221,7 @@ export default async function InvoiceDetailPage({
             <>
               <div className="bg-white rounded-lg border border-blue-200 p-4">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">見積書を請求書に変換</h3>
-                <ConvertEstimateButton invoiceId={invoice.id} />
+                <ConvertEstimateButton invoiceId={invoice.id} hasContract={!!invoice.contract_id} />
               </div>
               {!invoice.contract_id && (
                 <div className="bg-white rounded-lg border border-green-200 p-4">

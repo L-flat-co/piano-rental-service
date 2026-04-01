@@ -1037,6 +1037,12 @@ export async function createEstimateWithOptions(
       total_amount: totalAmount,
       status: 'draft',
       notes: input.notes || '見積書',
+      estimate_metadata: {
+        plan_id: input.plan_id,
+        option_ids: input.option_ids,
+        custom_options: input.custom_options,
+        initial_fees: input.include_initial_fees ? input.initial_fees : [],
+      },
     })
     .select('id')
     .single()
@@ -1059,13 +1065,14 @@ export async function createEstimateWithOptions(
 // ============================================================
 
 export async function convertEstimateToInvoice(
-  invoiceId: string
+  invoiceId: string,
+  updateContract: boolean = true
 ): Promise<ActionResult<void>> {
   const supabase = await createClient()
 
   const { data: invoice } = await supabase
     .from('invoices')
-    .select('invoice_number')
+    .select('invoice_number, contract_id, estimate_metadata')
     .eq('id', invoiceId)
     .single()
 
@@ -1093,6 +1100,68 @@ export async function convertEstimateToInvoice(
     .eq('id', invoiceId)
 
   if (error) return { success: false, error: error.message }
+
+  // 契約内容を見積のメタデータで更新
+  if (updateContract && invoice.contract_id && invoice.estimate_metadata) {
+    const meta = invoice.estimate_metadata as {
+      plan_id: string
+      option_ids: string[]
+      custom_options: { name: string; monthly_fee: number }[]
+      initial_fees: { label: string; amount: number; quantity: number }[]
+    }
+
+    // プランから contract_period を取得
+    const { data: plan } = await supabase
+      .from('rental_plans')
+      .select('period')
+      .eq('id', meta.plan_id)
+      .single()
+
+    // 契約のプラン・オプション・カスタムオプションを更新
+    const contractUpdate: Record<string, unknown> = {
+      plan_id: meta.plan_id,
+      option_ids: meta.option_ids,
+      custom_options: meta.custom_options,
+    }
+    if (plan) {
+      contractUpdate.contract_period = plan.period
+    }
+
+    await supabase
+      .from('contracts')
+      .update(contractUpdate)
+      .eq('id', invoice.contract_id)
+
+    // 初期費用を更新（既存を削除して再挿入）
+    if (meta.initial_fees && meta.initial_fees.length > 0) {
+      // pickup_pending は残す
+      await supabase
+        .from('contract_spot_fees')
+        .delete()
+        .eq('contract_id', invoice.contract_id)
+        .eq('section', 'initial')
+        .neq('memo', 'pickup_pending')
+
+      const spotFeeRows = meta.initial_fees
+        .filter((f) => f.amount > 0 && f.quantity > 0)
+        .map((fee) => ({
+          contract_id: invoice.contract_id,
+          contract_type: 'home_school' as const,
+          fee_type: 'custom' as const,
+          section: 'initial' as const,
+          label: fee.label,
+          amount: fee.amount,
+          quantity: fee.quantity,
+          is_recurring: false,
+        }))
+
+      if (spotFeeRows.length > 0) {
+        await supabase.from('contract_spot_fees').insert(spotFeeRows)
+      }
+    }
+
+    revalidatePath(`/admin/contracts/${invoice.contract_id}`)
+  }
 
   revalidatePath('/admin/invoices')
   revalidatePath(`/admin/invoices/${invoiceId}`)
