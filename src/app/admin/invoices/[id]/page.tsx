@@ -94,10 +94,10 @@ export default async function InvoiceDetailPage({
             </>
           )}
           <Link
-            href="/admin/invoices"
+            href={invoice.contract_id ? `/admin/contracts/${invoice.contract_id}` : '/admin/contracts'}
             className="text-gray-500 hover:text-gray-700 text-sm px-3 py-2"
           >
-            ← 一覧に戻る
+            ← {invoice.contract_id ? '契約に戻る' : '契約一覧に戻る'}
           </Link>
         </div>
       </div>
