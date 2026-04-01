@@ -117,11 +117,11 @@ export default async function ContractDetailPage({
   return (
     <div className="p-6 max-w-4xl">
       {/* ヘッダー */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between mb-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900">
-              {contract.customer?.name} さんの契約
+            <h1 className="text-xl font-bold text-gray-900">
+              {contract.customer?.name} 様の契約
             </h1>
             <span
               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${CONTRACT_STATUS_COLORS[contract.status]}`}
@@ -129,21 +129,8 @@ export default async function ContractDetailPage({
               {CONTRACT_STATUS_LABELS[contract.status]}
             </span>
           </div>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {contract.piano?.maker} {contract.piano?.model} /{' '}
-            {CONTRACT_PERIOD_LABELS[contract.contract_period]}
-          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/admin/contracts/${contract.id}/estimate/new`}
-            className="flex items-center gap-1.5 bg-white border border-blue-300 hover:bg-blue-50 text-blue-700 text-sm font-medium px-3 py-2 rounded-md"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            見積書を作成
-          </Link>
+        <div className="flex items-center gap-2 flex-shrink-0">
           <ContractPDFButton
             contractId={contract.id}
             defaultDate={contract.created_at?.slice(0, 10) || ''}
@@ -152,7 +139,7 @@ export default async function ContractDetailPage({
             <>
               <Link
                 href={`/admin/contracts/${contract.id}/edit`}
-                className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-medium px-4 py-2 rounded-md"
+                className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-medium px-3 py-2 rounded-md"
               >
                 編集
               </Link>
@@ -172,15 +159,52 @@ export default async function ContractDetailPage({
           />
           <Link
             href="/admin/contracts"
-            className="text-gray-500 hover:text-gray-700 text-sm px-3 py-2"
+            className="text-gray-500 hover:text-gray-700 text-xs px-2 py-2"
           >
-            ← 一覧に戻る
+            ← 一覧
           </Link>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      {/* 顧客・ピアノ 横並び */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="bg-white rounded-lg border border-gray-200 px-5 py-3 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-gray-500 mb-0.5">顧客</p>
+            {contract.customer ? (
+              <>
+                <Link href={`/admin/customers/${contract.customer.id}`}
+                  className="text-sm font-semibold text-blue-600 hover:underline">
+                  {contract.customer.name}
+                </Link>
+                <p className="text-xs text-gray-500">
+                  {[contract.customer.phone, contract.customer.email].filter(Boolean).join(' / ')}
+                </p>
+              </>
+            ) : <p className="text-sm text-gray-400">—</p>}
+          </div>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 px-5 py-3 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-gray-500 mb-0.5">ピアノ</p>
+            {contract.piano ? (
+              <>
+                <Link href={`/admin/pianos/${contract.piano.id}`}
+                  className="text-sm font-semibold text-blue-600 hover:underline">
+                  {contract.piano.maker} {contract.piano.model}
+                </Link>
+                <p className="text-xs text-gray-500">
+                  {PIANO_TYPE_LABELS[contract.piano.piano_type]}
+                  {contract.piano.is_mute ? ' ・ 消音' : ''}
+                  {contract.piano.serial_number ? ` ・ S/N: ${contract.piano.serial_number}` : ''}
+                </p>
+              </>
+            ) : <p className="text-sm text-gray-400">—</p>}
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-6">
           {/* 契約内容 */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-4">契約内容</h2>
@@ -282,16 +306,28 @@ export default async function ContractDetailPage({
             </div>
           )}
 
+          {/* 見積書作成ボタン（見積0件時のみ・初期費用の直下） */}
+          {estimates.length === 0 && (
+            <Link
+              href={`/admin/contracts/${contract.id}/estimate/new`}
+              className="block w-full text-center bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 text-sm font-medium py-3 rounded-lg transition-colors"
+            >
+              + 見積書を作成
+            </Link>
+          )}
+
           {/* 見積書 */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-gray-900">見積書</h2>
-              <Link
-                href={`/admin/contracts/${contract.id}/estimate/new`}
-                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-              >
-                + 新しい見積書
-              </Link>
+              {estimates.length > 0 && (
+                <Link
+                  href={`/admin/contracts/${contract.id}/estimate/new`}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  + 新しい見積書
+                </Link>
+              )}
             </div>
             {estimates.length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-4">見積書はまだ作成されていません</p>
@@ -343,57 +379,6 @@ export default async function ContractDetailPage({
               </div>
             )}
           </div>
-        </div>
-
-        {/* サイドバー：顧客・ピアノ情報 */}
-        <div className="space-y-4">
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">顧客</h3>
-            {contract.customer ? (
-              <div className="space-y-1">
-                <Link
-                  href={`/admin/customers/${contract.customer.id}`}
-                  className="text-sm font-medium text-blue-600 hover:underline"
-                >
-                  {contract.customer.name}
-                </Link>
-                {contract.customer.phone && (
-                  <p className="text-xs text-gray-500">{contract.customer.phone}</p>
-                )}
-                {contract.customer.email && (
-                  <p className="text-xs text-gray-500">{contract.customer.email}</p>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-400">—</p>
-            )}
-          </div>
-
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">ピアノ</h3>
-            {contract.piano ? (
-              <div className="space-y-1">
-                <Link
-                  href={`/admin/pianos/${contract.piano.id}`}
-                  className="text-sm font-medium text-blue-600 hover:underline"
-                >
-                  {contract.piano.maker} {contract.piano.model}
-                </Link>
-                <p className="text-xs text-gray-500">
-                  {PIANO_TYPE_LABELS[contract.piano.piano_type]}
-                  {contract.piano.is_mute ? ' ・ 消音' : ''}
-                </p>
-                {contract.piano.serial_number && (
-                  <p className="text-xs text-gray-400 font-mono">
-                    S/N: {contract.piano.serial_number}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-400">—</p>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   )
