@@ -1096,6 +1096,7 @@ export async function convertEstimateToInvoice(
     .update({
       invoice_number: invoiceNumber,
       issue_date: now.toISOString().slice(0, 10),
+      notes: null,
     })
     .eq('id', invoiceId)
 
