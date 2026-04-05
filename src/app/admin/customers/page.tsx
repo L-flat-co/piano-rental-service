@@ -13,10 +13,18 @@ const STATUS_COLORS: Record<CustomerStatus, string> = {
 export default async function CustomersPage({
   searchParams,
 }: {
-  searchParams: { q?: string }
+  searchParams: { q?: string; category?: string }
 }) {
   const query = searchParams.q || ''
-  const customers = await getCustomers(query)
+  const categoryFilter = searchParams.category || ''
+
+  let customers = await getCustomers(query)
+
+  if (categoryFilter) {
+    customers = customers.filter((c) =>
+      c.product_categories?.includes(categoryFilter)
+    )
+  }
 
   return (
     <div className="p-6">
@@ -44,6 +52,27 @@ export default async function CustomersPage({
             + 顧客を追加
           </Link>
         </div>
+      </div>
+
+      {/* カテゴリフィルタ */}
+      <div className="flex items-center gap-1 mb-4">
+        {([
+          { value: '', label: 'すべて' },
+          { value: 'piano', label: 'ピアノ' },
+          { value: 'strings', label: '弦楽器' },
+        ]).map((cat) => (
+          <Link
+            key={cat.value}
+            href={`/admin/customers${cat.value ? `?category=${cat.value}` : ''}${query ? `${cat.value ? '&' : '?'}q=${query}` : ''}`}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border ${
+              categoryFilter === cat.value
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            {cat.label}
+          </Link>
+        ))}
       </div>
 
       {/* 検索 */}
