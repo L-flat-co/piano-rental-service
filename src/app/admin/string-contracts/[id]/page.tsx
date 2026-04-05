@@ -7,19 +7,24 @@ import { formatDate, formatCurrency } from '@/lib/utils'
 import { DeleteButton } from '@/components/shared/DeleteButton'
 import { SizeUpDialog } from '@/components/strings/SizeUpDialog'
 import { getStringInstruments } from '@/actions/string-instrument-actions'
+import { getDirectDebits } from '@/actions/direct-debit-actions'
+import { RegisterDirectDebitButton } from '@/components/shared/RegisterDirectDebitButton'
+import { DIRECT_DEBIT_STATUS_LABELS, DIRECT_DEBIT_STATUS_COLORS } from '@/lib/constants'
 
 export default async function StringContractDetailPage({
   params,
 }: {
   params: { id: string }
 }) {
-  const [contract, allInstruments] = await Promise.all([
+  const [contract, allInstruments, allDebits] = await Promise.all([
     getStringContract(params.id),
     getStringInstruments(),
+    getDirectDebits('home_school'),  // service_type で弦楽器用のフィルタは後日追加
   ])
 
   if (!contract) notFound()
 
+  const contractDebits = allDebits.filter((d) => d.contract_id === params.id)
   const customer = (Array.isArray(contract.customer) ? contract.customer[0] : contract.customer) as Customer | null
   const instrument = (Array.isArray(contract.instrument) ? contract.instrument[0] : contract.instrument) as StringInstrument | null
   const plan = (Array.isArray(contract.plan) ? contract.plan[0] : contract.plan) as StringRentalPlan | null
@@ -180,6 +185,46 @@ export default async function StringContractDetailPage({
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-3">メモ</h2>
             <p className="text-sm text-gray-700 whitespace-pre-wrap">{contract.memo}</p>
+          </div>
+        )}
+
+        {/* 口座振替（支払方法がdirect_debitの場合のみ） */}
+        {contract.payment_method === 'direct_debit' && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-base font-semibold text-gray-900 mb-4">口座振替</h2>
+            {contractDebits.length === 0 ? (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-400 text-center py-2">口座振替の申請がありません</p>
+                <RegisterDirectDebitButton
+                  contractId={contract.id}
+                  contractType="home_school"
+                  customerId={contract.customer_id}
+                  customerName={customer?.name || ''}
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {contractDebits.map((d) => (
+                  <div key={d.id} className="border border-gray-100 rounded-lg px-4 py-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${DIRECT_DEBIT_STATUS_COLORS[d.status]}`}>
+                          {DIRECT_DEBIT_STATUS_LABELS[d.status]}
+                        </span>
+                        {d.bank_name && <span className="text-sm text-gray-700 ml-2">{d.bank_name}</span>}
+                      </div>
+                      <div className="text-right text-xs text-gray-500">
+                        {d.initial_debit_date && <p>初回: {formatDate(d.initial_debit_date)}</p>}
+                        {d.debit_count > 0 && <p>引落{d.debit_count}回</p>}
+                      </div>
+                    </div>
+                    {d.status === 'rejected' && d.rejection_memo && (
+                      <p className="text-xs text-red-500 mt-1">{d.rejection_memo}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

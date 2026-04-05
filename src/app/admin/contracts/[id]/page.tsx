@@ -16,6 +16,9 @@ import { ContractPDFButton } from '@/components/contracts/ContractPDFButton'
 import { DeleteContractButton } from '@/components/contracts/DeleteContractButton'
 import { INVOICE_STATUS_LABELS, INVOICE_STATUS_COLORS } from '@/lib/constants'
 import { getSpotFeeTypes } from '@/actions/pricing-actions'
+import { getDirectDebits } from '@/actions/direct-debit-actions'
+import { RegisterDirectDebitButton } from '@/components/shared/RegisterDirectDebitButton'
+import { DIRECT_DEBIT_STATUS_LABELS, DIRECT_DEBIT_STATUS_COLORS } from '@/lib/constants'
 import { InvoiceListPaginated } from '@/components/contracts/InvoiceListPaginated'
 import { ContractSpotFee } from '@/types'
 
@@ -87,6 +90,10 @@ export default async function ContractDetailPage({
       pickupFeeStatus = { type: 'pending', estimate: pickupPending?.amount || 0 }
     }
   }
+
+  // 口座振替データを取得
+  const allDebits = await getDirectDebits('home_school')
+  const contractDebits = allDebits.filter((d) => d.contract_id === params.id)
 
   // この契約に紐づく見積書・請求書を取得
   const { data: relatedInvoicesData } = await supabase
@@ -279,6 +286,48 @@ export default async function ContractDetailPage({
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-base font-semibold text-gray-900 mb-3">メモ</h2>
               <p className="text-sm text-gray-700 whitespace-pre-wrap">{contract.memo}</p>
+            </div>
+          )}
+
+          {/* 口座振替（支払方法がdirect_debitの場合のみ） */}
+          {contract.payment_method === 'direct_debit' && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-semibold text-gray-900">口座振替</h2>
+              </div>
+              {contractDebits.length === 0 ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-400 text-center py-2">口座振替の申請がありません</p>
+                  <RegisterDirectDebitButton
+                    contractId={contract.id}
+                    contractType="home_school"
+                    customerId={contract.customer_id}
+                    customerName={contract.customer?.name || ''}
+                  />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {contractDebits.map((d) => (
+                    <div key={d.id} className="border border-gray-100 rounded-lg px-4 py-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${DIRECT_DEBIT_STATUS_COLORS[d.status]}`}>
+                            {DIRECT_DEBIT_STATUS_LABELS[d.status]}
+                          </span>
+                          {d.bank_name && <span className="text-sm text-gray-700 ml-2">{d.bank_name}</span>}
+                        </div>
+                        <div className="text-right text-xs text-gray-500">
+                          {d.initial_debit_date && <p>初回: {formatDate(d.initial_debit_date)}</p>}
+                          {d.debit_count > 0 && <p>引落{d.debit_count}回</p>}
+                        </div>
+                      </div>
+                      {d.status === 'rejected' && d.rejection_memo && (
+                        <p className="text-xs text-red-500 mt-1">{d.rejection_memo}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

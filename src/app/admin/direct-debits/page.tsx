@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import { getDirectDebits } from '@/actions/direct-debit-actions'
+import { getCustomers } from '@/actions/customer-actions'
 import { DIRECT_DEBIT_STATUS_LABELS, DIRECT_DEBIT_STATUS_COLORS } from '@/lib/constants'
 import { formatDate } from '@/lib/utils'
 import { DirectDebitStatus, ServiceType } from '@/types'
+import { AddDirectDebitForm } from '@/components/shared/AddDirectDebitForm'
 
 export default async function DirectDebitsPage({
   searchParams,
@@ -12,7 +14,11 @@ export default async function DirectDebitsPage({
   const statusFilter = searchParams.status as DirectDebitStatus | undefined
   const typeFilter = searchParams.type as ServiceType | undefined
 
-  let debits = await getDirectDebits(typeFilter)
+  const [allDebits, customers] = await Promise.all([
+    getDirectDebits(typeFilter),
+    getCustomers(),
+  ])
+  let debits = allDebits
 
   if (statusFilter) {
     debits = debits.filter((d) => d.status === statusFilter)
@@ -34,6 +40,7 @@ export default async function DirectDebitsPage({
             {statusCounts.rejected > 0 && <span className="text-red-600 font-medium"> / 差し戻し {statusCounts.rejected}件</span>}
           </p>
         </div>
+        <AddDirectDebitForm customers={customers} />
       </div>
 
       {/* ステータスフィルタ */}
