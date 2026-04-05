@@ -145,6 +145,8 @@ export const ADMIN_NAV_ITEMS = [
   { href: '/admin/pianos', label: 'ピアノ管理', icon: 'pianos' },
   { href: '/admin/contracts', label: 'ご家庭/教室用 契約', icon: 'contracts' },
   { href: '/admin/events', label: 'イベント案件', icon: 'events' },
+  { href: '/admin/strings', label: '弦楽器管理', icon: 'strings' },
+  { href: '/admin/string-contracts', label: '弦楽器契約', icon: 'string_contracts' },
   { href: '/admin/payments', label: '入金管理', icon: 'payments' },
   { href: '/admin/pricing', label: '料金設定', icon: 'pricing' },
   { href: '/admin/reports', label: '会計レポート', icon: 'reports' },
@@ -161,6 +163,47 @@ export const EVENT_CANCEL_POLICY = {
   HALF_DAYS: 7,       // 7日前〜 50%
   FULL_DAYS: 3,       // 3日前〜 100%
 } as const
+
+// ============================================================
+// 弦楽器
+// ============================================================
+
+export const STRING_TYPE_LABELS = {
+  violin: 'バイオリン',
+  viola: 'ビオラ',
+  cello: 'チェロ',
+} as const
+
+export const STRING_SIZE_LABELS = {
+  '4/4': '4/4（フルサイズ）',
+  '7/8': '7/8',
+  '3/4': '3/4',
+  '1/2': '1/2',
+  '1/4': '1/4',
+  '1/8': '1/8',
+  '1/10': '1/10',
+  '1/16': '1/16',
+  '1/32': '1/32',
+} as const
+
+export const STRING_RENTAL_TYPE_LABELS = {
+  subscription: '定額レンタル',
+  spot: 'スポットレンタル',
+} as const
+
+export const STRING_SPOT_PERIOD_LABELS = {
+  '30': '30日間',
+  '60': '60日間',
+  '90': '90日間',
+} as const
+
+export const STRING_SUBSCRIPTION_PERIOD_LABELS = {
+  monthly: '毎月払い',
+  half_year: '半年払い',
+  yearly: '年払い',
+} as const
+
+export const DEFAULT_STRING_ACCESSORIES = ['弓', 'ケース', '松脂', '肩当て'] as const
 
 // ============================================================
 // 運送費デフォルト値

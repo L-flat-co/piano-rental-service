@@ -18,6 +18,12 @@ export type SpotFeeType = 'master' | 'custom'
 export type CustomerStatus = 'active' | 'suspended' | 'terminated'
 export type ApplicationStatus = 'submitted' | 'reviewing' | 'approved' | 'rejected' | 'converted'
 
+// 弦楽器
+export type StringType = 'violin' | 'viola' | 'cello'
+export type StringSize = '4/4' | '7/8' | '3/4' | '1/2' | '1/4' | '1/8' | '1/10' | '1/16' | '1/32'
+export type StringRentalType = 'subscription' | 'spot'
+export type StringSizeCategory = 'fractional' | 'full'
+
 // ============================================================
 // スタッフ
 // ============================================================
@@ -47,6 +53,7 @@ export interface Customer {
   postal_code: string | null
   address: string | null
   status: CustomerStatus
+  product_categories: string[]   // ['piano'], ['strings'], ['piano', 'strings']
   memo: string | null
   created_at: string
   updated_at: string
@@ -336,6 +343,90 @@ export interface Application {
   // JOIN
   customer?: Customer
   contract?: Contract
+}
+
+// ============================================================
+// 弦楽器 在庫
+// ============================================================
+
+export interface StringInstrument {
+  id: string
+  maker: string
+  model: string
+  serial_number: string | null
+  string_type: StringType
+  size: StringSize
+  status: PianoStatus         // 既存ENUM再利用
+  accessories: string[]
+  storage_location: string | null
+  purchase_date: string | null
+  memo: string | null
+  created_at: string
+  updated_at: string
+}
+
+// ============================================================
+// 弦楽器 料金プラン
+// ============================================================
+
+export interface StringRentalPlan {
+  id: string
+  string_type: StringType
+  size_category: StringSizeCategory
+  rental_type: StringRentalType
+  period: string
+  price: number               // 税込
+  name: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+// ============================================================
+// 弦楽器 契約
+// ============================================================
+
+export interface StringContract {
+  id: string
+  customer_id: string
+  instrument_id: string
+  plan_id: string
+  rental_type: StringRentalType
+  status: ContractStatus      // 既存ENUM再利用
+  start_date: string
+  end_date: string | null
+  billing_day: number | null
+  monthly_fee: number
+  payment_method: PaymentMethod | null
+  memo: string | null
+  created_at: string
+  updated_at: string
+
+  // JOIN
+  customer?: Customer
+  instrument?: StringInstrument
+  plan?: StringRentalPlan
+  size_ups?: StringContractSizeUp[]
+}
+
+// ============================================================
+// サイズアップ履歴
+// ============================================================
+
+export interface StringContractSizeUp {
+  id: string
+  contract_id: string
+  old_instrument_id: string
+  new_instrument_id: string
+  old_size: StringSize
+  new_size: StringSize
+  changed_at: string
+  memo: string | null
+  created_at: string
+
+  // JOIN
+  old_instrument?: StringInstrument
+  new_instrument?: StringInstrument
 }
 
 // ============================================================
