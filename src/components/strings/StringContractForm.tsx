@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { StringContractFormData, createStringContract, updateStringContract } from '@/actions/string-contract-actions'
 import { StringContract, StringInstrument, StringRentalPlan, Customer, StringRentalType, PaymentMethod } from '@/types'
 import { STRING_TYPE_LABELS, STRING_RENTAL_TYPE_LABELS } from '@/lib/constants'
+import { CustomerSearchSelect } from '@/components/shared/CustomerSearchSelect'
 import { formatCurrency } from '@/lib/utils'
 
 const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
@@ -128,12 +129,12 @@ export function StringContractForm({ contract, customers, availableInstruments, 
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>顧客 <span className="text-red-500">*</span></label>
-            <select value={formData.customer_id} onChange={(e) => set('customer_id', e.target.value)} className={inputClass} required>
-              <option value="">-- 選択 --</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}{c.company_name ? ` (${c.company_name})` : ''}</option>
-              ))}
-            </select>
+            <CustomerSearchSelect
+              customers={customers}
+              value={formData.customer_id}
+              onChange={(id) => set('customer_id', id)}
+              required
+            />
           </div>
           <div>
             <label className={labelClass}>楽器 <span className="text-red-500">*</span></label>
