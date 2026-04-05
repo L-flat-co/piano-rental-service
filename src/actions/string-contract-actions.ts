@@ -12,6 +12,11 @@ export interface StringContractFormData {
   start_date: string
   billing_day: number
   payment_method: PaymentMethod
+  application_date: string
+  rule_type: string
+  has_insurance: boolean
+  shipping_fee: number
+  delivery_method: string
   memo: string
 }
 
@@ -142,6 +147,11 @@ export async function createStringContract(
       billing_day: formData.rental_type === 'subscription' ? formData.billing_day : null,
       monthly_fee: plan.price,
       payment_method: formData.payment_method || 'bank_transfer',
+      application_date: formData.application_date || null,
+      rule_type: formData.rule_type || 'A',
+      has_insurance: formData.has_insurance || false,
+      shipping_fee: formData.shipping_fee || 0,
+      delivery_method: formData.delivery_method || null,
       memo: formData.memo || null,
     })
     .select()

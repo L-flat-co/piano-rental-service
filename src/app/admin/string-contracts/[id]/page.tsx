@@ -130,7 +130,7 @@ export default async function StringContractDetailPage({
             <div>
               <dt className="text-xs font-medium text-gray-500">支払方法</dt>
               <dd className="mt-1 text-sm text-gray-900">
-                {{ bank_transfer: '銀行振込', direct_debit: '口座振替', cash: '現金', card: 'カード', other: 'その他' }[contract.payment_method || 'bank_transfer']}
+                {{ bank_transfer: '銀行振込', direct_debit: '口座振替', cash: '現金', card: 'カード', cod: '代引', other: 'その他' }[contract.payment_method || 'bank_transfer']}
               </dd>
             </div>
           </dl>

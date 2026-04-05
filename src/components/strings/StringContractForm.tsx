@@ -12,6 +12,7 @@ const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   direct_debit: '口座振替',
   cash: '現金',
   card: 'クレジットカード',
+  cod: '代引',
   other: 'その他',
 }
 
@@ -42,6 +43,11 @@ export function StringContractForm({ contract, customers, availableInstruments, 
     start_date: contract?.start_date || '',
     billing_day: contract?.billing_day || 1,
     payment_method: contract?.payment_method || 'bank_transfer',
+    application_date: contract?.application_date || '',
+    rule_type: contract?.rule_type || 'A',
+    has_insurance: contract?.has_insurance || false,
+    shipping_fee: contract?.shipping_fee || 0,
+    delivery_method: contract?.delivery_method || '',
     memo: contract?.memo || '',
   })
   const [error, setError] = useState<string | null>(null)
@@ -233,6 +239,49 @@ export function StringContractForm({ contract, customers, availableInstruments, 
             ))}
           </select>
         </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass}>申込日</label>
+            <input type="date" value={formData.application_date} onChange={(e) => set('application_date', e.target.value)}
+              className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>区分</label>
+            <select value={formData.rule_type} onChange={(e) => set('rule_type', e.target.value)} className={inputClass}>
+              <option value="A">A（新規約）</option>
+              <option value="O">O（旧規約）</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass}>納品方法</label>
+            <select value={formData.delivery_method} onChange={(e) => set('delivery_method', e.target.value)} className={inputClass}>
+              <option value="">-- 選択 --</option>
+              <option value="shipping">宅配便</option>
+              <option value="pickup">ご来店</option>
+              <option value="self_delivery">自社配送</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelClass}>送料/手数料（税込）</label>
+            <div className="relative">
+              <span className="absolute left-3 top-2 text-sm text-gray-500">¥</span>
+              <input type="number" min={0} value={formData.shipping_fee || ''}
+                onChange={(e) => set('shipping_fee', parseInt(e.target.value) || 0)}
+                className={`${inputClass} pl-7 text-right`} placeholder="0" />
+            </div>
+          </div>
+        </div>
+
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={formData.has_insurance}
+            onChange={(e) => set('has_insurance', e.target.checked)}
+            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+          <span className="text-sm text-gray-900">あんしん楽器プラン加入</span>
+        </label>
       </div>
 
       {/* メモ */}

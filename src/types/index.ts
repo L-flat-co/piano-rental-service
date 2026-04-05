@@ -11,7 +11,7 @@ export type ContractStatus = 'draft' | 'confirmed' | 'active' | 'suspended' | 't
 export type ContractOrigin = 'manual' | 'web'
 export type EventStatus = 'estimate' | 'confirmed' | 'completed' | 'cancelled'
 export type InvoiceStatus = 'draft' | 'issued' | 'paid' | 'cancelled'
-export type PaymentMethod = 'bank_transfer' | 'cash' | 'card' | 'direct_debit' | 'other'
+export type PaymentMethod = 'bank_transfer' | 'cash' | 'card' | 'direct_debit' | 'cod' | 'other'
 export type DocumentType = 'estimate' | 'contract' | 'invoice' | 'receipt'
 export type SpotFeeSection = 'initial' | 'monthly'
 export type SpotFeeType = 'master' | 'custom'
@@ -54,6 +54,7 @@ export interface Customer {
   address: string | null
   status: CustomerStatus
   product_categories: string[]   // ['piano'], ['strings'], ['piano', 'strings']
+  affiliation: string | null     // 'lf'(教室生徒), 'external'(提携機関), 'general'(一般)
   memo: string | null
   created_at: string
   updated_at: string
@@ -398,6 +399,14 @@ export interface StringContract {
   billing_day: number | null
   monthly_fee: number
   payment_method: PaymentMethod | null
+  application_date: string | null       // 申込日
+  rule_type: string | null              // 区分（O:旧規約 / A:新規約）
+  cancellation_request_date: string | null  // 解約申込日
+  earliest_cancellation_date: string | null // 最短解約日
+  return_date: string | null            // 返却日
+  has_insurance: boolean                // あんしんプラン加入
+  shipping_fee: number                  // 送料/代引手数料（税込）
+  delivery_method: string | null        // 納品方法
   memo: string | null
   created_at: string
   updated_at: string
@@ -427,6 +436,31 @@ export interface StringContractSizeUp {
   // JOIN
   old_instrument?: StringInstrument
   new_instrument?: StringInstrument
+}
+
+// ============================================================
+// 口座振替管理
+// ============================================================
+
+export type DirectDebitStatus = 'pending' | 'active' | 'rejected' | 'cancelled'
+
+export interface DirectDebit {
+  id: string
+  contract_id: string
+  contract_type: ServiceType
+  customer_id: string
+  status: DirectDebitStatus
+  initial_debit_date: string | null
+  last_debit_date: string | null
+  debit_count: number
+  bank_name: string | null
+  rejection_memo: string | null
+  memo: string | null
+  created_at: string
+  updated_at: string
+
+  // JOIN
+  customer?: Customer
 }
 
 // ============================================================

@@ -16,6 +16,7 @@ const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   cash: '現金',
   card: 'クレジットカード',
   direct_debit: '口座振替',
+  cod: '代引',
   other: 'その他',
 }
 

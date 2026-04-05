@@ -8,6 +8,7 @@ const PAYMENT_METHOD_LABELS = {
   cash: '現金',
   card: 'カード',
   direct_debit: '口座振替',
+  cod: '代引',
   other: 'その他',
 } as const
 

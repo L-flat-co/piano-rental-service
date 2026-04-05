@@ -148,6 +148,7 @@ export const ADMIN_NAV_ITEMS = [
   { href: '/admin/strings', label: '弦楽器管理', icon: 'strings' },
   { href: '/admin/string-contracts', label: '弦楽器契約', icon: 'string_contracts' },
   { href: '/admin/payments', label: '入金管理', icon: 'payments' },
+  { href: '/admin/direct-debits', label: '口座振替管理', icon: 'direct_debits' },
   { href: '/admin/pricing', label: '料金設定', icon: 'pricing' },
   { href: '/admin/reports', label: '会計レポート', icon: 'reports' },
   { href: '/admin/staff', label: 'スタッフ管理', icon: 'staff' },
@@ -204,6 +205,32 @@ export const STRING_SUBSCRIPTION_PERIOD_LABELS = {
 } as const
 
 export const DEFAULT_STRING_ACCESSORIES = ['弓', 'ケース', '松脂', '肩当て'] as const
+
+export const AFFILIATION_LABELS = {
+  lf: 'LF（教室生徒）',
+  external: '外部（提携機関）',
+  general: '一般',
+} as const
+
+export const DELIVERY_METHOD_LABELS = {
+  shipping: '宅配便',
+  pickup: 'ご来店',
+  self_delivery: '自社配送',
+} as const
+
+export const DIRECT_DEBIT_STATUS_LABELS = {
+  pending: '申請中',
+  active: '実行中',
+  rejected: '差し戻し',
+  cancelled: '解約',
+} as const
+
+export const DIRECT_DEBIT_STATUS_COLORS = {
+  pending: 'bg-yellow-100 text-yellow-800',
+  active: 'bg-green-100 text-green-800',
+  rejected: 'bg-red-100 text-red-800',
+  cancelled: 'bg-gray-100 text-gray-600',
+} as const
 
 // ============================================================
 // 運送費デフォルト値
