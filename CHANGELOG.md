@@ -280,4 +280,63 @@
 ### Supabase手動作業
 `supabase/migrations/add_applications.sql` を Supabase SQL Editor で実行すること
 
+## 2026-04-01 — Phase 4 以降の機能追加 ✅
+
+### 契約フォーム拡張
+- 支払方法に `direct_debit`（口座振替）を追加（DB ENUM + UI）
+- 付属品セクション追加（ピアノ椅子・インシュレーター・敷板・ヘッドホン + カスタム追加）
+- カスタム月額オプション（名前+月額を自由入力で追加）
+- 運送費: 搬入のみ選択時に搬出参考金額が運送費と自動連動
+- 契約書PDF: 付属品・支払方法・領収書代替文言を反映
+
+### 契約詳細ページ UIリニューアル
+- 「さん」→「様」表記
+- 顧客・ピアノを上部に横並び表示（サイドバー廃止→1カラム化）
+- 見積書・請求書リストを契約詳細内に表示
+- 初期費用の編集・追加・削除機能（EditInitialFees コンポーネント）
+- 契約抹消機能（完全抹消 / 一部保持の2モード）
+- 顧客・ピアノの削除機能（紐づきチェック付き）
+
+### 見積書フロー
+- 契約詳細から「見積書を作成」→ `/admin/contracts/[id]/estimate/new`
+  - プラン・オプション・カスタムオプション・初期費用を自由に変更可能
+  - 同じ契約から複数見積書を作成可能（オプション違い比較用）
+- `createEstimateWithOptions` Server Action（`estimate_metadata` JSONB保存）
+- 見積→請求書変換時にメタデータで契約内容を自動更新
+- 見積書リスト表示（契約詳細内）
+- 備考の編集機能（EditableNotes コンポーネント）
+
+### 契約ステータス拡張
+- `draft`（見積段階）→ `confirmed`（契約書PDF発行時に自動）→ `active`（開始日到来で自動）→ `terminated`（解約）
+- 契約書PDFダウンロード時に draft → confirmed へ自動遷移
+- ページ表示時に confirmed + start_date ≤ 今日 → active へ自動遷移
+
+### 月次請求書自動生成 + メール自動送信
+- `/api/cron/monthly-billing` — Vercel Cron（毎日 UTC 0:00 = JST AM 9:00）
+- 支払期限 = start_date の日 - 1（1日開始は28日、上限28日で2月対応）
+- 発行日 = 支払期限 - invoice_due_days（システム設定）
+- 重複防止（同月・同契約の INV が既にあればスキップ）
+- 顧客にメールアドレスがあれば HTML メールで自動送信
+- `CRON_SECRET` で外部からの不正実行を防止
+
+### スタッフ管理
+- `/admin/staff` ページ新規作成
+- スタッフ追加（Supabase Auth ユーザー作成 + staff テーブル INSERT）
+- ロール変更・パスワード変更・有効/無効切り替え
+
+### ドメイン・メール設定
+- `rental.l-flat-reserve.com` を Vercel に設定（お名前.com A レコード `76.76.21.21`）
+- Resend: 親ドメイン `l-flat-reserve.com` の DKIM を共有（追加設定不要）
+- SPF TXT レコード追加
+- `FROM_EMAIL` を `noreply@rental.l-flat-reserve.com` に更新
+
+### システム設定修正
+- 設定保存が動作しない問題を修正（Admin Client で RLS バイパス）
+- 「支払期限（日数）」→「請求書発行日（支払期限の◯日前）」にラベル修正
+
+### 支払期限ロジック統一（全6箇所）
+- 1日開始 → 28日（前月末扱い）
+- 30/31日開始 → 28上限で2月対応
+- Cron / 契約詳細 / 契約一覧 / 契約フォーム / 契約書PDF / 申込→契約変換
+
 <!-- 以降、機能追加・仕様変更のたびに追記 -->

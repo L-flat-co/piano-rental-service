@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { CopyButton } from '@/components/shared/CopyButton'
 import { getApplications } from '@/actions/application-actions'
 import { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_COLORS } from '@/lib/constants-applications'
 import { CONTRACT_PERIOD_LABELS, PIANO_TYPE_LABELS } from '@/lib/constants'
@@ -22,6 +23,22 @@ export default async function ApplicationsPage({
 
   return (
     <div className="p-6">
+      {/* 申込フォームURL */}
+      <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center justify-between">
+        <div>
+          <p className="text-xs font-medium text-blue-700 mb-0.5">申込フォームURL</p>
+          <a
+            href="https://rental.l-flat-reserve.com/apply"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-blue-600 hover:underline font-mono"
+          >
+            https://rental.l-flat-reserve.com/apply
+          </a>
+        </div>
+        <CopyButton text="https://rental.l-flat-reserve.com/apply" />
+      </div>
+
       {/* ヘッダー */}
       <div className="flex items-center justify-between mb-6">
         <div>
